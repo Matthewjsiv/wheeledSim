@@ -1,6 +1,7 @@
 import pybullet as p
 import numpy as np
 from wheeledSim.simController import simController
+from wheeledSim.shock_travel_sensor import ShockTravelSensor
 from wheeledRobots.clifford.cliffordRobot import Clifford
 
 if __name__=="__main__":
@@ -18,6 +19,8 @@ if __name__=="__main__":
                     "traction":1.25,
                     "massScale":1.0}
     robot = Clifford(params=cliffordParams,physicsClientId=physicsClient)
+
+    sensors = [ShockTravelSensor(robot, physicsClient)]
 
     """initialize simulation controls (terrain, robot controls, sensing, etc.)"""
     # physics engine parameters
@@ -66,8 +69,9 @@ if __name__=="__main__":
     senseParams = noSenseParams # use this kind of sensing
     # senseParams = lidarPCParams
 
+    import pdb;pdb.set_trace()
     # initialize simulation controller
-    sim = simController(robot,simulationParamsIn=simParams,senseParamsIn=senseParams,terrainMapParamsIn=terrainMapParams,terrainParamsIn=terrainParams,explorationParamsIn= explorationParams,physicsClientId=physicsClient)
+    sim = simController(robot,simulationParamsIn=simParams,senseParamsIn=senseParams,terrainMapParamsIn=terrainMapParams,terrainParamsIn=terrainParams,explorationParamsIn= explorationParams,physicsClientId=physicsClient, sensors=sensors)
     # save simulation parameters for future reuse (sim params, robot params, terrain map params, terrain params, sensing params)
     #np.save('exampleAllSimParams.npy',[sim.simulationParams,robot.params,sim.terrain.terrainMapParams,sim.terrainParams,sim.senseParams])
     plotSensorReadings = False # plot sensor reading during simulation?

@@ -1,12 +1,13 @@
 import pybullet as p
 import numpy as np
+import torch
 from wheeledSim.randomTerrain import *
 from wheeledSim.randomExplorationPolicy import *
 
 class simController:
     # this class controls the simulation. It controls the terrain and robot, and returns data
     def __init__(self,robot,physicsClientId=0,simulationParamsIn={},senseParamsIn={},
-                terrainMapParamsIn={},terrainParamsIn={},explorationParamsIn={}):
+                terrainMapParamsIn={},terrainParamsIn={},explorationParamsIn={},sensors=[]):
         # set up simulation params
         self.simulationParams = {"timeStep":1./500.,
                             "stepsPerControlLoop":50,
@@ -41,6 +42,8 @@ class simController:
             physicsClientId=self.physicsClientId)
         p.setGravity(0,0,self.simulationParams["gravity"],physicsClientId=self.physicsClientId)
         p.setTimeStep(self.timeStep,physicsClientId=self.physicsClientId)
+
+        self.sensors = sensors
 
         # set up terrain
         self.terrainParamsIn = {"terrainType": "randomRockyTerrain",
@@ -82,6 +85,7 @@ class simController:
         self.lastStateRecordFlag = False # Flag to tell if last state of robot has been recorded or not
         self.resetRobot()
 
+
     # generate new terrain
     def newTerrain(self,**kwargs):
         self.terrain.generate(self.terrainParamsIn,**kwargs)
@@ -116,6 +120,7 @@ class simController:
             p.resetDebugVisualizerCamera(1.0,headingAngle,-15,pos,physicsClientId=self.physicsClientId)
 
     def controlLoopStep(self,driveCommand):
+        import pdb;pdb.set_trace()
         throttle = driveCommand[0]
         steering = driveCommand[1]
         # Create Prediction Input
@@ -135,8 +140,19 @@ class simController:
         # command robot throttle & steering and simulate
         self.robot.drive(throttle)
         self.robot.steer(steering)
+
+        data = {k:[] for k in self.sensors}
+
         for i in range(self.stepsPerControlLoop):
             self.stepSim()
+            for sensor in self.sensors:
+                if sensor.is_time_series:
+                    data[sensor].append(sensor.measure())
+
+        import pdb;pdb.set_trace()
+        #TODO: @Ashley decide how to best return the multimodal data (likely should be a dict)
+        data = {k:torch.stack(v, dim=0) if k.is_time_series else k.measure() for k,v in data.items()}
+
         # Record outcome state
         newPose = self.robot.getPositionOrientation()
         # check how long robot has been stuck

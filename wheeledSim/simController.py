@@ -19,7 +19,7 @@ class simController:
                             "terminateIfFlipped":False,
                             "randomActionScale":[1,1]}
         self.simulationParams.update(simulationParamsIn)
-        
+
         # set up robot sensing parameters
         self.senseParams = {"senseDim":[5,5], # width (meter or angle) and height (meter or angle) of terrain map or point cloud
                             "lidarAngleOffset":[0,0],
@@ -49,10 +49,13 @@ class simController:
         if self.terrainParamsIn["existingTerrain"]!=None:
             self.terrain = self.terrainParamsIn["existingTerrain"]
         else:
+            print(self.terrainParamsIn["terrainType"])
             if self.terrainParamsIn["terrainType"] == "randomRockyTerrain":
                 self.terrain = randomRockyTerrain(terrainMapParamsIn,physicsClientId=self.physicsClientId)
             elif self.terrainParamsIn["terrainType"] == "randomSloped":
                 self.terrain = randomSloped(terrainMapParamsIn,physicsClientId=self.physicsClientId)
+            elif self.terrainParamsIn["terrainType"] == "mountains":
+                self.terrain = Mountains(terrainMapParamsIn,physicsClientId=self.physicsClientId)
             else:
                 self.terrain = self.terrainParamsIn["terrainType"](terrainMapParamsIn,physicsClientId=self.physicsClientId)
             self.newTerrain()
@@ -64,7 +67,7 @@ class simController:
         self.stopMoveCount =0
 
         # set up random driving
-        explorationParams = {"explorationType":"boundedExplorationNoise"}
+        explorationParams = {"explorationType":"fixedRandomAction"}
         explorationParams.update(explorationParamsIn)
         if explorationParams["explorationType"] == "boundedExplorationNoise":
             self.randDrive = boundedExplorationNoise(explorationParams)
@@ -101,6 +104,7 @@ class simController:
 
     def stepSim(self):
         self.robot.updateSpringForce()
+        self.robot.updateTraction4Tire()
         p.stepSimulation(physicsClientId=self.physicsClientId)
         self.lastStateRecordFlag = False
         if self.camFollowBot:
@@ -166,8 +170,8 @@ class simController:
         if self.stopMoveCount > self.simulationParams["maxStopMoveLength"]:
             termSim = True
         # boundary criteria
-        minZ = np.min(self.terrain.gridZ) - 1.
-        maxZ = np.max(self.terrain.gridZ) + 1.
+        minZ = np.min(self.terrain.gridZ) - 100.
+        maxZ = np.max(self.terrain.gridZ) + 100.
         minX = np.min(self.terrain.gridX) + 1.
         maxX = np.max(self.terrain.gridX) - 1.
         minY = np.min(self.terrain.gridY) + 1.
@@ -180,6 +184,50 @@ class simController:
 
     # generate sensing data
     def sensing(self,robotPose,senseType=None,expandDim=False):
+        # # viewMatrix = p.computeViewMatrix(
+        # #     cameraEyePosition=robotPose,
+        # #     cameraTargetPosition=[0, 0, 0],
+        # #     cameraUpVector=[0, 1, 0])
+        # projectionMatrix = p.computeProjectionMatrixFOV(
+        #     fov=45.0,
+        #     aspect=1.0,
+        #     nearVal=0.1,
+        #     farVal=3.1)
+        # # p.getCameraImage(224,224, viewMatrix=viewMatrix,projectionMatrix=projectionMatrix)
+        # rotation = p.getMatrixFromQuaternion(robotPose[1])
+        # forward_vector = [rotation[0], rotation[3], rotation[6]]
+        # up_vector = [rotation[2], rotation[5], rotation[8]]
+        #
+        # camera_target = [
+        #     robotPose[0][0] + forward_vector[0] * 10,
+        #     robotPose[0][1] + forward_vector[1] * 10,
+        #     robotPose[0][2] + forward_vector[2] * 10]
+        #
+        # m = .1
+        # frontPose = [robotPose[0][0] + m*(2*robotPose[1][1]*robotPose[1][3] - 2*robotPose[1][2]*robotPose[1][0]),
+        #             robotPose[0][1] + m*(2*robotPose[1][2]*robotPose[1][3] + 2*robotPose[1][1]*robotPose[1][0]),
+        #             robotPose[0][2] + m*(1 - 2*robotPose[1][1]**2 - 2*robotPose[1][2]**2)]
+        #
+        # # view_matrix = p.computeViewMatrix(
+        # #     [robotPose[0][0],robotPose[0][1],robotPose[0][2]],
+        # #     camera_target,
+        # #     up_vector,
+        # #     physicsClientId=self.physicsClientId)
+        # view_matrix = p.computeViewMatrix(
+        #     frontPose,
+        #     camera_target,
+        #     up_vector,
+        #     physicsClientId=self.physicsClientId)
+        #
+        # p.getCameraImage(
+        #         424,
+        #         424,
+        #         view_matrix,
+        #         projectionMatrix,
+        #         renderer=p.ER_BULLET_HARDWARE_OPENGL,
+        #         flags=p.ER_NO_SEGMENTATION_MASK,
+        #         physicsClientId=self.physicsClientId)
+
         if senseType is None:
             senseType = self.senseParams["senseType"]
         if not isinstance(senseType,int):

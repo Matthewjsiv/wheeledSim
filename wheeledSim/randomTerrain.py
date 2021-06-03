@@ -4,6 +4,10 @@ from scipy.ndimage import gaussian_filter
 from noise import pnoise1,pnoise2
 from scipy.interpolate import interp2d
 from scipy.interpolate import griddata
+import os
+import scipy as sp
+import scipy.ndimage
+import cv2
 
 class terrain(object):
     """
@@ -18,9 +22,11 @@ class terrain(object):
                         "heightScale":0.1}
         self.terrainMapParams.update(terrainMapParamsIn)
         # store parameters
-        self.mapWidth = self.terrainMapParams["mapWidth"] 
+        self.mapWidth = self.terrainMapParams["mapWidth"]
         self.mapHeight = self.terrainMapParams["mapHeight"]
-        self.meshScale = [self.terrainMapParams["widthScale"],self.terrainMapParams["heightScale"],1]
+        # self.meshScale = [self.terrainMapParams["widthScale"],self.terrainMapParams["heightScale"],1]
+        self.meshScale = [self.terrainMapParams["widthScale"],self.terrainMapParams["heightScale"],self.terrainMapParams["depthScale"]]
+
         self.mapSize = [(self.mapWidth-1)*self.meshScale[0],(self.mapHeight-1)*self.meshScale[1]] # dimension of terrain (meters x meters)
         # define x and y of map grid
         self.gridX = np.linspace(-self.mapSize[0]/2.0,self.mapSize[0]/2.0,self.mapWidth)
@@ -40,7 +46,7 @@ class terrain(object):
                                                         numHeightfieldRows=self.mapWidth, numHeightfieldColumns=self.mapHeight,
                                                         replaceHeightfieldIndex = self.terrainShape,physicsClientId=self.physicsClientId)
         else:
-            self.terrainShape = p.createCollisionShape(shapeType = p.GEOM_HEIGHTFIELD,meshScale = self.meshScale, heightfieldData=self.gridZ.reshape(-1), 
+            self.terrainShape = p.createCollisionShape(shapeType = p.GEOM_HEIGHTFIELD,meshScale = self.meshScale, heightfieldData=self.gridZ.reshape(-1),
                                                         numHeightfieldRows=self.mapWidth, numHeightfieldColumns=self.mapHeight,
                                                         physicsClientId=self.physicsClientId)
             self.terrainOffset = (np.max(self.gridZ)+np.min(self.gridZ))/2.
@@ -49,6 +55,13 @@ class terrain(object):
         p.resetBasePositionAndOrientation(self.terrainBody,[-self.meshScale[0]/2.,-self.meshScale[1]/2.,self.terrainOffset], [0,0,0,1],physicsClientId=self.physicsClientId)
         # change to brown terrain
         p.changeVisualShape(self.terrainBody, -1, textureUniqueId=-1,rgbaColor=self.color,physicsClientId=self.physicsClientId)
+
+        textureId = p.loadTexture("wheeledSim/gimp_overlay_out.png")
+        #textureId = p.loadTexture("wheeledSim/frictionRectangle.png")
+        # textureId = p.loadTexture("wheeledSim/gimp_overlay_upscale.png")
+        p.changeVisualShape(self.terrainBody, -1, textureUniqueId = textureId)
+        p.changeVisualShape(self.terrainBody, -1, rgbaColor=[1,1,1,1])
+
         # change contact parameters of terrain
         p.changeDynamics(self.terrainBody,-1,collisionMargin=0.01,restitution=0,contactStiffness=30000,contactDamping=1000,physicsClientId=self.physicsClientId)
     # return terrain map relative to a Pose
@@ -92,6 +105,73 @@ class randomSloped(terrain):
         slope = np.random.normal(self.terrainParams['gmm_centers'][index],self.terrainParams['gmm_vars'][index])
         self.gridZ = self.gridX*slope
         self.updateTerrain()
+
+class Mountains(terrain):
+    """
+    This class generates flat terrain with random slope
+    """
+    def __init__(self,terrainMapParamsIn={},physicsClientId=0):
+        super().__init__(terrainMapParamsIn,physicsClientId)
+        self.terrainParams = {"gmm_centers":[0],
+                            "gmm_vars":[1],
+                            "gmm_weights":[1]}
+    def generate(self,terrainParamsIn={}):
+        from PIL import Image
+        # self.mapSize = [(512-1)*self.meshScale[0],(512-1)*self.meshScale[1]] # dimension of terrain (meters x meters)
+        # # define x and y of map grid
+        # self.gridX = np.linspace(-self.mapSize[0]/2.0,self.mapSize[0]/2.0,self.mapWidth)
+        # self.gridY = np.linspace(-self.mapSize[1]/2.0,self.mapSize[1]/2.0,self.mapHeight)
+        # self.gridX,self.gridY = np.meshgrid(self.gridX,self.gridY)
+        depth = Image.open('wheeledSim/wm_height_out.png')
+        # depth = Image.open('wheeledSim/wm_height_upscale.png')
+
+        # img = cv2.imread('wheeledSim/wm_height_upscale.png',cv2.IMREAD_GRAYSCALE)
+        # depth = cv2.resize(img, dsize=(512,512), interpolation=cv2.INTER_CUBIC)
+        # print(depth.shape)
+        # print(np.array(depth))
+        depth = np.array(depth)/255.0/255.0
+        # print(depth)
+        depth = self.blur(depth)
+        self.gridZ = np.fliplr(depth)
+        #sself.gridZ[:,:] = 0
+        # self.gridZ = np.fliplr(self.gridZ)
+        # print(os.listdir())
+        # terrainShape = p.createCollisionShape(shapeType = p.GEOM_HEIGHTFIELD,meshScale = self.meshScale, heightfieldData=self.gridZ.reshape(-1),
+        #                                             numHeightfieldRows=self.mapWidth, numHeightfieldColumns=self.mapHeight,
+        #                                             physicsClientId=self.physicsClientId)
+        # # terrainShape = p.createCollisionShape(shapeType = p.GEOM_HEIGHTFIELD, meshScale=[.14,.14,24],fileName = "wheeledSim/wm_height_out.png",physicsClientId=self.physicsClientId)
+        # print('__________________________-')
+        #
+        # textureId = p.loadTexture("wheeledSim/gimp_overlay_out.png")
+        # terrain  = p.createMultiBody(0, terrainShape,physicsClientId=self.physicsClientId)
+        # p.changeVisualShape(terrain, -1, textureUniqueId = textureId)
+        #
+        # p.changeVisualShape(terrain, -1, rgbaColor=[1,1,1,1])
+
+
+        self.updateTerrain()
+
+    def blur(self, im, sigma=[.5,.5]):
+        im = sp.ndimage.filters.gaussian_filter(im, sigma, mode='constant')
+        return im
+
+
+# def rocks():
+#     # Create balls
+#     balls = []
+#     balls_init_pos = []
+#     sphereRadius = 0.1
+#     mass = 1
+#     colSphereId = p.createCollisionShape(p.GEOM_SPHERE, radius=sphereRadius)
+#     for i in range(10):
+#       for j in range(10):
+#         sphereUid = p.createMultiBody(
+#             mass,
+#             colSphereId,
+#             -1, [i * 3 * sphereRadius, j * 3 * sphereRadius, 2],
+#             useMaximalCoordinates=True)
+#         balls.append(sphereUid)
+#         balls_init_pos.append([i * 3 * sphereRadius, j * 3 * sphereRadius, 2])
 
 class randomRockyTerrain(terrain):
     """
@@ -159,6 +239,10 @@ class randomRockyTerrain(terrain):
                 blendIndices = distFromFlat < goalBlendRadius
                 self.gridZ[blendIndices] = flatHeight + (self.gridZ[blendIndices]-flatHeight)*distFromFlat[blendIndices]/goalBlendRadius
         self.gridZ = self.gridZ-np.min(self.gridZ)
+        # rocks()
+        # print(self.gridX.shape)
+        # print(self.gridY.shape)
+        # print(self.gridZ)
         self.updateTerrain()
     def randomSteps(self,xPoints,yPoints,numCells,cellPerlinScale,cellHeightScale):
         centersX = np.random.uniform(size=numCells,low=np.min(xPoints),high=np.max(xPoints))

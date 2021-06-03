@@ -12,6 +12,7 @@ class Clifford:
         # define which PyBullet simulation to use
         self.physicsClientId=physicsClientId
         # Default parameters to use with Clifford
+        # self.traction = 0
         self.params = {"maxThrottle":50,
                         "maxSteerAngle":0.5,
                         "susOffset":-0.01,
@@ -19,10 +20,15 @@ class Clifford:
                         "susUpperLimit":0.008,
                         "susDamping":10,
                         "susSpring":100,
-                        "traction":1.5,
+                        "traction":10.0,
                         "massScale":1.0,
                         "tireMassScale":1.0,
-                        "fixedSuspension":False}
+                        "fixedSuspension":False,
+                        "frictionMap": np.ones([512,512]),
+                        "fltire": 1.5,
+                        "frtire": 1.5,
+                        "bltire":1.5,
+                        "brtire":1.5}
         # change default params if defined
         for param in self.params:
             if param in params:
@@ -56,7 +62,7 @@ class Clifford:
         self.loosenModel()
         self.changeTraction()
         self.changeColor()
-        self.reset() 
+        self.reset()
     def reset(self,pose=[[0,0,0.3],[0,0,0,1]]):
         p.resetBasePositionAndOrientation(self.cliffordID, pose[0],pose[1],physicsClientId=self.physicsClientId)
         nJoints = p.getNumJoints(self.cliffordID,physicsClientId=self.physicsClientId)
@@ -144,6 +150,36 @@ class Clifford:
         for tire in tires:
             p.changeDynamics(self.cliffordID,self.linkNameToID[tire],lateralFriction=self.params["traction"],physicsClientId=self.physicsClientId)
 
+    def changeTireTraction(self,tire,newTraction):
+        # print(tire + '---->' + str(newTraction))
+        self.params[tire] = newTraction
+        p.changeDynamics(self.cliffordID,self.linkNameToID[tire],lateralFriction=newTraction,physicsClientId=self.physicsClientId)
+
+    def updateTraction(self):
+        pwb,rwb = self.getPositionOrientation()
+        x= int(pwb[0]/.14 + 512/2)
+        y = int(pwb[1]/.14 + 512/2)
+        fm = self.params["frictionMap"]
+        newtract = fm[y,x]
+        if newtract != self.params["traction"]:
+            self.changeTraction(newtract)
+            print(self.params["traction"])
+
+    def updateTraction4Tire(self):
+        #order should allegedly be
+        tlist = ['frtire','fltire','brtire','bltire']
+        poses = self.getTirePos()
+        fm = self.params["frictionMap"]
+        for t in range(4):
+            x = int(poses[t][0][0]/.14 + 512/2)
+            y = int(poses[t][0][1]/.14 + 512/2)
+            newtract = fm[y,x]
+            if newtract != self.params[tlist[t]]:
+                self.changeTireTraction(tlist[t],newtract)
+                print(tlist[t] + ': ' + str(self.params[tlist[t]]))
+
+
+
     def updateSpringForce(self):
         if self.params["fixedSuspension"]:
             return
@@ -163,22 +199,22 @@ class Clifford:
                                     physicsClientId=self.physicsClientId)
     def steer(self,angle):
         maxForce = 10000
-        p.setJointMotorControl2(bodyUniqueId=self.cliffordID, 
-        jointIndex=self.jointNameToID['axle2frwheel'], 
+        p.setJointMotorControl2(bodyUniqueId=self.cliffordID,
+        jointIndex=self.jointNameToID['axle2frwheel'],
         controlMode=p.POSITION_CONTROL,
         maxVelocity = 10,
         targetPosition = angle*self.params["maxSteerAngle"],
         force = maxForce,physicsClientId=self.physicsClientId)
-        
-        p.setJointMotorControl2(bodyUniqueId=self.cliffordID, 
-        jointIndex=self.jointNameToID['axle2flwheel'], 
+
+        p.setJointMotorControl2(bodyUniqueId=self.cliffordID,
+        jointIndex=self.jointNameToID['axle2flwheel'],
         controlMode=p.POSITION_CONTROL,
         maxVelocity = 10,
         targetPosition = angle*self.params["maxSteerAngle"],
         force = maxForce,physicsClientId=self.physicsClientId)
-        
-        #p.setJointMotorControl2(bodyUniqueId=self.cliffordID, 
-        #jointIndex=self.jointNameToID['axle2flwheel'], 
+
+        #p.setJointMotorControl2(bodyUniqueId=self.cliffordID,
+        #jointIndex=self.jointNameToID['axle2flwheel'],
         #controlMode=p.POSITION_CONTROL,
         #targetPosition = angle,
         #force = maxForce,physicsClientId=self.physicsClientId)
@@ -204,3 +240,11 @@ class Clifford:
         velocityReadings = [jointState[1] for jointState in jointStates]
         measurements = positionReadings + velocityReadings
         return measurements
+    def getTirePos(self):
+        # print(self.linkNameToID)
+        tires = ['frtire','fltire','brtire','bltire']
+        id_list = []
+        for tire in tires:
+            id_list.append(self.linkNameToID[tire])
+        linkStates = p.getLinkStates(self.cliffordID,id_list,physicsClientId=self.physicsClientId)
+        return linkStates

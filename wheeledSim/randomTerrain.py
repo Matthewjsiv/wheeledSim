@@ -56,11 +56,11 @@ class terrain(object):
         # change to brown terrain
         p.changeVisualShape(self.terrainBody, -1, textureUniqueId=-1,rgbaColor=self.color,physicsClientId=self.physicsClientId)
 
-        textureId = p.loadTexture("wheeledSim/gimp_overlay_out.png")
+#        textureId = p.loadTexture("wheeledSim/gimp_overlay_out.png")
         #textureId = p.loadTexture("wheeledSim/frictionRectangle.png")
         # textureId = p.loadTexture("wheeledSim/gimp_overlay_upscale.png")
-        p.changeVisualShape(self.terrainBody, -1, textureUniqueId = textureId)
-        p.changeVisualShape(self.terrainBody, -1, rgbaColor=[1,1,1,1])
+#        p.changeVisualShape(self.terrainBody, -1, textureUniqueId = textureId)
+#        p.changeVisualShape(self.terrainBody, -1, rgbaColor=[1,1,1,1])
 
         # change contact parameters of terrain
         p.changeDynamics(self.terrainBody,-1,collisionMargin=0.01,restitution=0,contactStiffness=30000,contactDamping=1000,physicsClientId=self.physicsClientId)

@@ -120,7 +120,6 @@ class simController:
             p.resetDebugVisualizerCamera(1.0,headingAngle,-15,pos,physicsClientId=self.physicsClientId)
 
     def controlLoopStep(self,driveCommand):
-        import pdb;pdb.set_trace()
         throttle = driveCommand[0]
         steering = driveCommand[1]
         # Create Prediction Input
@@ -149,7 +148,6 @@ class simController:
                 if sensor.is_time_series:
                     data[sensor].append(sensor.measure())
 
-        import pdb;pdb.set_trace()
         #TODO: @Ashley decide how to best return the multimodal data (likely should be a dict)
         data = {k:torch.stack(v, dim=0) if k.is_time_series else k.measure() for k,v in data.items()}
 

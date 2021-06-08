@@ -32,7 +32,7 @@ if __name__=="__main__":
     physicsClient = p.connect(p.GUI)#or p.DIRECT for non-graphical version
 
     fm = np.ones([512,512]) + 1
-    fm[:int(512/2),:] = 0
+    # fm[:int(512/2),:] = 0
     #FRICTION MAP IN SAME FRAME AS IMAGE, so needs to be flipped as well
     # fm = np.load('wheeledSim/frictionCheckerboard.npy')
     # fm = np.load('wheeledSim/frictionRectangle.npy')

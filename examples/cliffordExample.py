@@ -69,7 +69,7 @@ if __name__=="__main__":
     senseParams = noSenseParams # use this kind of sensing
     # senseParams = lidarPCParams
 
-    import pdb;pdb.set_trace()
+    # import pdb;pdb.set_trace()
     # initialize simulation controller
     sim = simController(robot,simulationParamsIn=simParams,senseParamsIn=senseParams,terrainMapParamsIn=terrainMapParams,terrainParamsIn=terrainParams,explorationParamsIn= explorationParams,physicsClientId=physicsClient, sensors=sensors)
     # save simulation parameters for future reuse (sim params, robot params, terrain map params, terrain params, sensing params)

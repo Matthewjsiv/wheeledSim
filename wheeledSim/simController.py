@@ -80,7 +80,7 @@ class simController:
         #self.randDrive = np.zeros(2)
 
         # set up robot
-        self.camFollowBot = False
+        self.camFollowBot = True
         self.robot = robot
         self.lastStateRecordFlag = False # Flag to tell if last state of robot has been recorded or not
         self.resetRobot()
@@ -120,7 +120,7 @@ class simController:
             p.resetDebugVisualizerCamera(1.0,headingAngle,-15,pos,physicsClientId=self.physicsClientId)
 
     def controlLoopStep(self,driveCommand):
-        import pdb;pdb.set_trace()
+        # import pdb;pdb.set_trace()
         throttle = driveCommand[0]
         steering = driveCommand[1]
         # Create Prediction Input
@@ -149,7 +149,7 @@ class simController:
                 if sensor.is_time_series:
                     data[sensor].append(sensor.measure())
 
-        import pdb;pdb.set_trace()
+        # import pdb;pdb.set_trace()
         #TODO: @Ashley decide how to best return the multimodal data (likely should be a dict)
         data = {k:torch.stack(v, dim=0) if k.is_time_series else k.measure() for k,v in data.items()}
 
@@ -219,7 +219,8 @@ class simController:
         #     robotPose[0][1] + forward_vector[1] * 10,
         #     robotPose[0][2] + forward_vector[2] * 10]
         #
-        # m = .1
+        # #forward shift (hopefully?)
+        # m = 1
         # frontPose = [robotPose[0][0] + m*(2*robotPose[1][1]*robotPose[1][3] - 2*robotPose[1][2]*robotPose[1][0]),
         #             robotPose[0][1] + m*(2*robotPose[1][2]*robotPose[1][3] + 2*robotPose[1][1]*robotPose[1][0]),
         #             robotPose[0][2] + m*(1 - 2*robotPose[1][1]**2 - 2*robotPose[1][2]**2)]
@@ -234,15 +235,73 @@ class simController:
         #     camera_target,
         #     up_vector,
         #     physicsClientId=self.physicsClientId)
-        #
-        # p.getCameraImage(
-        #         424,
-        #         424,
-        #         view_matrix,
-        #         projectionMatrix,
-        #         renderer=p.ER_BULLET_HARDWARE_OPENGL,
-        #         flags=p.ER_NO_SEGMENTATION_MASK,
-        #         physicsClientId=self.physicsClientId)
+
+        ##Or using camfollowbot setup
+        # pose = self.robot.getPositionOrientation()
+        # posx,posy,posz = pose[0]
+        # orien = pose[1]
+        # forwardDir = p.multiplyTransforms([0,0,0],orien,[1,0,0],[0,0,0,1])[0]
+        # pos[0] = pos[0] + forwardDir[0]
+        # pos[1] = pos[1] + forwardDir[1]
+        # pos[2] = pos[2] + forwardDir[2]
+
+
+        # pose = self.robot.getPositionOrientation()
+        posx,posy,posz = robotPose[0][0],robotPose[0][1],robotPose[0][2]
+        # orien = pose[1]
+        # forwardDir = p.multiplyTransforms([0,0,0],orien,[1,0,0],[0,0,0,1])[0]
+
+        rotation = p.getMatrixFromQuaternion(robotPose[1])
+        forwardDir = [rotation[0], rotation[3], rotation[6]]
+        upDir = [rotation[2], rotation[5], rotation[8]]
+
+        # m = 1
+        # posx += forwardDir[0]*(m + .05)
+        # posy += forwardDir[1]*(m+.05)
+        # posz += forwardDir[2]*(m + .08)
+        posx += forwardDir[0]*.12
+        posy += forwardDir[1]*.12
+        posz += forwardDir[2]*.12
+        posx += upDir[0]*.12
+        posy += upDir[1]*.12
+        posz += upDir[2]*.12
+        # posz += 3
+        # headingAngle = np.arctan2(forwardDir[1],forwardDir[0])*180/np.pi-90
+        # pitchAngle = forwardDir[2]*180/np.pi
+        q = robotPose[1]
+        # rollAngle = -1*np.arcsin(2*q[0]*q[1] + 2*q[2]*q[3])*180/np.pi
+        # rollAngle = np.arctan2(2*quat[1]*quat[3] - 2*quat[0]*quat[2], 1- 2*quat[1]*quat[1] - 2*quat[2]*quat[2])*180/np.pi
+        #roll = atan2(2.0*(q.x*q.y + q.w*q.z), q.w*q.w + q.x*q.x - q.y*q.y - q.z*q.z);
+        #wxyz or xyzw?
+        #quat won't work bc global
+        # rollAngle = np.arctan2(2.0*(q[0]*q[1] + q[3]*q[2]),q[3]*q[3] + q[0]*q[0] - q[1]*q[1] - q[2]*q[2])*180/np.pi
+        # pitchAngle = -1*(np.arcsin(forwardDir[2])*180/np.pi - 90)
+        # print(rollAngle)
+        # rollAngle = 180
+        # pitchAngle = 0
+        rollAngle = np.arctan2(2.0 * (q[2]*q[1] + q[3]*q[0]),1.0 - 2.0*(q[0]*q[0] + q[1]*q[1]))*180/np.pi
+        pitchAngle = -1*np.arcsin(2.0 * (q[1]*q[3] - q[2]*q[0]))*180/np.pi
+        headingAngle = np.arctan2(2.0 * (q[2]*q[3] + q[0]*q[1]), -1.0 + 2.0*(q[3]*q[3] + q[0]*q[0]))*180/np.pi - 90
+        # rollAngle = 0
+        # pitchAngle = 90
+        # headingAngle = 0
+        # pitchAngle = 90
+        view_matrix = p.computeViewMatrixFromYawPitchRoll((posx,posy,posz),.11,headingAngle,pitchAngle,rollAngle,2,physicsClientId=self.physicsClientId)
+        projectionMatrix = p.computeProjectionMatrixFOV(fov=45.0,
+            aspect=1.0,
+            nearVal=0.1,
+            farVal=1800.1)
+        # p.resetDebugVisualizerCamera(1.0,headingAngle,-15,pos,physicsClientId=self.physicsClientId)
+
+        p.getCameraImage(
+                400,
+                400,
+                view_matrix,
+                projectionMatrix,
+                renderer=p.ER_BULLET_HARDWARE_OPENGL,
+                flags=p.ER_NO_SEGMENTATION_MASK,
+                physicsClientId=self.physicsClientId)
+
 
         if senseType is None:
             senseType = self.senseParams["senseType"]

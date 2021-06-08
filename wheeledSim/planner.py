@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from grid_map_msgs.msg import GridMap
+from nav_msgs.msg import Odometry, Path
+from geometry_msgs.msg import PoseStamped
 
 from wheeledSim.heightmap import HeightMap
 
@@ -16,6 +18,7 @@ class AStarPlanner:
         self.heightmap = heightmap
         self.goal = torch.zeros(2)
         self.path = torch.zeros(1, 13)
+        self.odom = Odometry()
 
     def handle_gridmap(self, msg):
         """
@@ -29,9 +32,27 @@ class AStarPlanner:
         self.heightmap = HeightMap(map_data, resolution)
 
     def handle_goal(self, msg):
-        gx = msg.x
-        gy = msg.y
+        gx = msg.x - self.odom.pose.pose.position.x
+        gy = msg.y - self.odom.pose.pose.position.y
         self.goal = torch.tensor([gx, gy])
+
+    def handle_odom(self, msg):
+        self.odom = msg
+
+    def path_msg(self):
+        """
+        Global path for controller to track (needs odom to move to global)
+        """
+        msg = Path()
+        for pt in self.path:
+            p_msg = PoseStamped()
+            p_msg.header.stamp = rospy.Time.now()
+            p_msg.pose.position.x = pt[0] + self.odom.pose.pose.position.x
+            p_msg.pose.position.y = pt[1] + self.odom.pose.pose.position.y
+            p_msg.pose.position.z = pt[2] + self.odom.pose.pose.position.z
+            msg.poses.append(p_msg)
+        msg.header.stamp = rospy.Time.now()
+        return msg
 
     def get_grid_position(self, pos):
         """
@@ -173,6 +194,8 @@ if __name__ == '__main__':
     rospy.init_node("local_planner")
 
     hmap_sub = rospy.Subscriber("/local_map", GridMap, planner.handle_gridmap)
+    odom_sub = rospy.Subscriber("/odom", Odometry, planner.handle_odom)
+    path_pub = rospy.Publisher("/planner/path", Path)
 
     delay = 1.
 
@@ -182,9 +205,11 @@ if __name__ == '__main__':
     for i in range(int(delay * 2)):
         rate.sleep()
 
-    planner.solve(torch.zeros(13), torch.tensor([2., 0.]))
+    planner.solve(torch.zeros(13), torch.tensor([2., 1.]))
     planner.viz()
     plt.show()
 
-    for _ in range(10):
-        rate.sleep()
+    print('Publishing path...')
+#    for _ in range(10):
+    path_pub.publish(planner.path_msg())
+#        rate.sleep()

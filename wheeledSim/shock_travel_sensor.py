@@ -1,14 +1,18 @@
 import torch
 import pybullet as p
 
+from geometry_msgs.msg import Point
+
 class ShockTravelSensor:
     """
     Class to get shock travel from the clifford robot.
     """
-    def __init__(self, robot, physics_client_id=0):
-        self.robot = robot
+    def __init__(self, env, physics_client_id=0, topic='shock_travel'):
+        self.robot = env.robot
         self.physics_client_id = physics_client_id
         self.is_time_series=True
+        self.N = [4, ]
+        self.topic = topic
 
     def measure(self):
         frsupper_pos = torch.tensor(p.getLinkState(self.robot.cliffordID, self.robot.linkNameToID['frsupper'], physicsClientId=self.physics_client_id)[0])
@@ -26,3 +30,7 @@ class ShockTravelSensor:
         bl_travel = torch.linalg.norm(blsupper_pos - blslower_pos)
 
         return torch.tensor([fl_travel, fr_travel, bl_travel, br_travel]).float()
+
+    def to_rosmsg(self, data):
+        #TODO: implement
+        return Point()

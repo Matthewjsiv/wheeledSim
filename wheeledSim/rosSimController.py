@@ -117,6 +117,8 @@ if __name__ == '__main__':
 
     from wheeledSim.shock_travel_sensor import ShockTravelSensor
     from wheeledSim.local_heightmap_sensor import LocalHeightmapSensor
+    from wheeledSim.front_camera_sensor import FrontCameraSensor
+    from wheeledSim.lidar_sensor import LidarSensor
 
     physicsClient = p.connect(p.GUI)#or p.DIRECT for non-graphical version
 
@@ -147,7 +149,7 @@ if __name__ == '__main__':
     robot = Clifford(params=cliffordParams,physicsClientId=physicsClient)
 
     env = rosSimController(robot, terrainParamsIn=terrainParams, terrainMapParamsIn=terrainMapParams)
-    env.set_sensors([LocalHeightmapSensor(env), ShockTravelSensor(env)])
+    env.set_sensors([LocalHeightmapSensor(env), ShockTravelSensor(env),FrontCameraSensor(env),LidarSensor(env)])
 
     rospy.init_node("pybullet_simulator")
     rate = rospy.Rate(10)

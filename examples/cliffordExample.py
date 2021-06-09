@@ -2,6 +2,8 @@ import pybullet as p
 import numpy as np
 from wheeledSim.simController import simController
 from wheeledSim.shock_travel_sensor import ShockTravelSensor
+from wheeledSim.front_camera_sensor import FrontCameraSensor
+from wheeledSim.lidar_sensor import LidarSensor
 from wheeledRobots.clifford.cliffordRobot import Clifford
 
 if __name__=="__main__":
@@ -20,7 +22,8 @@ if __name__=="__main__":
                     "massScale":1.0}
     robot = Clifford(params=cliffordParams,physicsClientId=physicsClient)
 
-    sensors = [ShockTravelSensor(robot, physicsClient)]
+    # sensors = [ShockTravelSensor(robot, physicsClient),FrontCameraSensor(robot, physicsClient),LidarSensor(robot, physicsClient) ]
+    sensors = [FrontCameraSensor(robot, physics_client_id=physicsClient),LidarSensor(robot, physics_client_id=physicsClient) ]
 
     """initialize simulation controls (terrain, robot controls, sensing, etc.)"""
     # physics engine parameters

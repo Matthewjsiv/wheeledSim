@@ -247,6 +247,7 @@ class simController:
 
 
         # pose = self.robot.getPositionOrientation()
+        # posx,posy,posz = pose[0][0],pose[0][1],pose[0][2]
         posx,posy,posz = robotPose[0][0],robotPose[0][1],robotPose[0][2]
         # orien = pose[1]
         # forwardDir = p.multiplyTransforms([0,0,0],orien,[1,0,0],[0,0,0,1])[0]
@@ -290,10 +291,10 @@ class simController:
         projectionMatrix = p.computeProjectionMatrixFOV(fov=45.0,
             aspect=1.0,
             nearVal=0.1,
-            farVal=1800.1)
+            farVal=18.1)
         # p.resetDebugVisualizerCamera(1.0,headingAngle,-15,pos,physicsClientId=self.physicsClientId)
 
-        p.getCameraImage(
+        w,h,rgbImg,depthImg,segImg = p.getCameraImage(
                 400,
                 400,
                 view_matrix,

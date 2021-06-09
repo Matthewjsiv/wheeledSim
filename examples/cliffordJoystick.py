@@ -89,13 +89,7 @@ if __name__=="__main__":
                     "removeInvalidPointsInPC":False, # remove invalid points in point cloud
                     "senseType":1,
                     "sensorPose":[[0,0,0.3],[0,0,0,1]]} # pose of sensor relative to body
-    lidarDepthParams = {"senseDim":[2.*np.pi,np.pi/4.], # angular width and height of lidar sensing
-                    "lidarAngleOffset":[0,0], # offset of lidar sensing angle
-                    "lidarRange":120, # max distance of lidar sensing
-                    "senseResolution":[512,64], # resolution of sensing (width x height)
-                    "removeInvalidPointsInPC":False, # remove invalid points in point cloud
-                    "senseType":1,
-                    "sensorPose":[[0,0,0.3],[0,0,0,1]]} # pose of sensor relative to body
+
     lidarPCParams = lidarDepthParams.copy()
     lidarPCParams["senseType"] = 2
     noSenseParams = {"senseType":-1}
@@ -128,6 +122,7 @@ if __name__=="__main__":
         else:
             if plotSensorReadings:
                 sensorData = data[0][1]
+                # print(sensorData.shape)
                 plt.clf()
                 if sim.senseParams["senseType"] == 2: #point cloud
                     ax = fig.add_subplot(111, projection='3d')

@@ -162,18 +162,22 @@ class simController:
             self.stopMoveCount = 0
         else:
             self.stopMoveCount +=1
-        # relative position, body twist, joint position and velocity
-        self.lastPose = newPose
-        self.lastVel = self.robot.getBaseVelocity_body()
-        if self.senseParams["recordJointStates"]:
-            self.lastJointState = self.robot.measureJoints()
-            self.lastAbsoluteState = list(self.lastPose[0])+list(self.lastPose[1])+self.lastVel[:] + self.lastJointState[:]
-        else:
-            self.lastAbsoluteState = list(self.lastPose[0])+list(self.lastPose[1])+self.lastVel[:]
+
+        self.lastAbsoluteState = self.getObservation()
         self.lastStateRecordFlag = True
         newStateData = [self.lastAbsoluteState]
         return stateActionData,newStateData,self.simTerminateCheck(newPose)
 
+    def getObservation(self):
+        # relative position, body twist, joint position and velocity
+        pose = self.robot.getPositionOrientation()
+        vel = self.robot.getBaseVelocity_body()
+        joints = self.robot.measureJoints()
+        if self.senseParams['recordJointStates']:
+            obs = list(pose[0]) + list(pose[1]) + vel[:] + joints[:]
+        else:
+            obs = list(pose[0]) + list(pose[1]) + vel[:]
+        return obs
     # check if simulation should be terminated
     def simTerminateCheck(self,robotPose):
         termSim = False

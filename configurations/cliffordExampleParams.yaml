@@ -19,7 +19,7 @@
     senseType: 1
     sensorPose: [[0,0,0.3],[0,0,0,1]] # pose of sensor relative to body
 
-  simParams:
+  simulationParams:
     timeStep: 0.002
     stepsPerControlLoop: 50
     numSolverIterations: 300
@@ -44,3 +44,8 @@
     perlinScale: 2.5
     perlinHeightScale: 0.1
 
+  senseParams:
+      senseType: -1
+
+  explorationParams:
+      explorationType: "boundedExplorationNoise"

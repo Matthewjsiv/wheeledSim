@@ -12,15 +12,17 @@ class WheeledSimEnv:
     Wrapper class to make a gym environment from pybullet sim
     """
 
-    def __init__(self, use_images=False, simulationParamsIn = {}, senseParamsIn={}, terrainMapParamsIn={},
-                 terrainParamsIn={}, existingTerrain=None, cliffordParams={}, explorationParamsIn={},T=-1, render=True):
+    def __init__(self, config_file, use_images=False, T=-1, render=True):
+
+        stream = open(config_file, 'r')
+        config = yaml.load(stream, Loader=yaml.FullLoader)
 
         self.client = pybullet.connect(pybullet.GUI) if render else pybullet.connect(pybullet.DIRECT)
-        self.robot = Clifford(params=cliffordParams, physicsClientId=self.client)
-        if existingTerrain:
-            existingTerrain.generate()
-        self.env = simController(self.robot, self.client, simulationParamsIn, senseParamsIn, terrainMapParamsIn,
-                                 terrainParamsIn, explorationParamsIn)
+        self.robot = Clifford(params=config['cliffordParams'], physicsClientId=self.client)
+
+        self.env = simController(self.robot, self.client, config['simulationParams'], config['senseParams'],
+                                 config['terrainMapParams'], config['terrainParams'], config['explorationParams'])
+
         self.T = T  # max steps allowed
         self.nsteps = 0  # number of steps taken
         self.use_images = use_images
@@ -71,46 +73,24 @@ class WheeledSimEnv:
 
         # increment number of steps and set terminal state if reached max steps
         self.nsteps += 1
-        timeout = (self.T > 0) and (self.nsteps >= self.T)
-        reward = self.reward(obs)
+        timeout = self.get_terminal()
+        reward = self.get_reward(obs)
+
         return obs, reward, sim_t or timeout, {}
 
-    def reward(self, obs):
+    def get_reward(self, obs):
         # can be updated with a reward function in future work
         return 0
+
+    def get_terminal(self):
+        return (self.T > 0) and (self.nsteps >= self.T)
 
 
 if __name__ == '__main__':
 
-    """load configuration parameters"""
-    stream = open("../configurations/cliffordExampleParams.yaml", 'r')
-    config = yaml.load(stream, Loader=yaml.FullLoader)
-
-    """initialize clifford robot"""
-    cliffordParams = config['cliffordParams']
-
-    """initialize simulation controls (terrain, robot controls, sensing, etc.)"""
-    # physics engine parameters
-    simParams = config['simParams']
-
-    print(simParams['timeStep'])
-
-    # random terrain generation parameters
-    terrainMapParams = config['terrainMapParams']
-    terrainParams = config['terrainParams']
-
-    explorationParams = {"explorationType": "boundedExplorationNoise"}
-
-    # robot sensor parameters
-    heightMapSenseParams = {}  # use base params for heightmap
-    lidarDepthParams = config['lidarDepthParams']
-    lidarPCParams = lidarDepthParams.copy()
-    lidarPCParams["senseType"] = 2
-    noSenseParams = {"senseType": -1}
-    senseParams = noSenseParams  # use this kind of sensing
-
-    env = WheeledSimEnv(simulationParamsIn=simParams,senseParamsIn=senseParams,terrainMapParamsIn=terrainMapParams,
-                        terrainParamsIn=terrainParams,explorationParamsIn=explorationParams, T=50)
+    """load environment"""
+    config_file = "configurations/cliffordExampleParams.yaml"
+    env = WheeledSimEnv(config_file, T=50)
 
     # run simulation 5 times
     for _ in range(5):

@@ -151,7 +151,7 @@ class simController:
 
         # import pdb;pdb.set_trace()
         #TODO: @Ashley decide how to best return the multimodal data (likely should be a dict)
-        data = {k:torch.stack(v, dim=0) if k.is_time_series else k.measure() for k,v in data.items()}
+        sense_data = {k:torch.stack(v, dim=0) if k.is_time_series else k.measure() for k,v in data.items()}
 
         # Record outcome state
         newPose = self.robot.getPositionOrientation()
@@ -165,7 +165,7 @@ class simController:
 
         self.lastAbsoluteState = self.getObservation()
         self.lastStateRecordFlag = True
-        newStateData = [self.lastAbsoluteState]
+        newStateData = [self.lastAbsoluteState,sense_data]
         return stateActionData,newStateData,self.simTerminateCheck(newPose)
 
     def getObservation(self):

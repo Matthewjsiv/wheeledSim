@@ -5,8 +5,8 @@ import yaml
 
 from wheeledRobots.clifford.cliffordRobot import Clifford
 from wheeledSim.simController import simController
-from wheeledSim.front_camera_sensor import FrontCameraSensor
-from wheeledSim.lidar_sensor import LidarSensor
+# from wheeledSim.front_camera_sensor import FrontCameraSensor
+# from wheeledSim.lidar_sensor import LidarSensor
 
 
 class WheeledSimEnv:
@@ -25,10 +25,11 @@ class WheeledSimEnv:
 
         # initialize all sensors from config file
         sensors = []
-        sense_dict = config['sensors']
+        self.sense_dict = config['sensors']
+
         for sensor in config['sensors']:
             # TODO: Test (I can't import rospy so I can't currently test this to see if it works, but this is the idea)
-            sensors.append(sense_dict[sensor]['init'](self.robot, senseParamsIn=sense_dict[sensor]['params'],
+            sensors.append(self.sense_dict[sensor]['init'](self.robot, senseParamsIn=self.sense_dict[sensor]['params'],
                                                       physicsClientId=self.client))
 
         # load simulation environment
@@ -43,16 +44,16 @@ class WheeledSimEnv:
         # observation takes form (x,y,z) position, (x,y,z,w) quaternion orientation, velocity, joint state
         state_space = gym.spaces.Box(low=np.ones(13) * -float('inf'), high=np.ones(13) + float('inf'))
 
-        # TODO: Incorporate sensing data into state space?
-        """
-        if not self.use_images:
-            return state_space
-        else:
-            image_space = gym.spaces.Box(low=np.ones(self.env.senseParams['senseResolution']) * -float('inf'),
-                                         high=np.ones(self.env.senseParams['senseResolution']) * float('inf'))
-            return gym.spaces.Dict({'state': state_space, 'image': image_space})
-        """
-        return state_space
+        # Add sensor output to observation space dict
+        sensor_space = {'state': state_space}
+        for sensor in self.sense_dict:
+            out_space = gym.spaces.Box(low=np.ones(self.sense_dict[sensor]['out_shape'])*-float('inf'),
+                                       high=np.ones(self.sense_dict[sensor]['out_shape'])*float('inf'))
+            sensor_space[sensor] = out_space
+
+        obs_space = gym.spaces.Dict(sensor_space)
+
+        return obs_space
 
     @property
     def action_space(self):
@@ -72,10 +73,11 @@ class WheeledSimEnv:
 
     def step(self, action):
         # get state action, next state, and boolean terminal state from simulation
-        state_action, next_state, sim_t = self.env.controlLoopStep(action)  # image is sa[1]
+        state_action, next_state, sim_t = self.env.controlLoopStep(action)
 
-        # TODO: figure out incorporating sensing data to observation
-        obs = {"state": np.array(next_state)[0]}
+        # TODO: clean up after checking in about changing control loop function
+        obs = next_state[1]  # sensing data
+        obs["state"] = np.array(next_state)[0]
 
         # increment number of steps and set terminal state if reached max steps
         self.nsteps += 1
@@ -97,6 +99,8 @@ if __name__ == '__main__':
     """load environment"""
     config_file = "../configurations/cliffordExampleParams.yaml"
     env = WheeledSimEnv(config_file, T=50)
+    test = env.observation_space
+    print('Observation:', test)
 
     # run simulation 5 times
     for _ in range(5):

@@ -5,8 +5,8 @@ import yaml
 
 from wheeledRobots.clifford.cliffordRobot import Clifford
 from wheeledSim.simController import simController
-# from wheeledSim.front_camera_sensor import FrontCameraSensor
-# from wheeledSim.lidar_sensor import LidarSensor
+from wheeledSim.front_camera_sensor import FrontCameraSensor
+from wheeledSim.lidar_sensor import LidarSensor
 
 
 class WheeledSimEnv:

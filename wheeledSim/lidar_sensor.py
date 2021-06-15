@@ -27,7 +27,7 @@ class LidarSensor:
         self.senseParams.update(senseParamsIn)
         self.env = env
         self.is_time_series = False
-        self.N = [3,self.senseParams["senseResolution"][0] * self.senseParams["senseResolution"][1]]
+        self.N = [self.senseParams["senseResolution"][0] * self.senseParams["senseResolution"][1], 3] if self.senseParams['senseType'] != 1 else self.senseParams['senseResolution']
         self.topic = topic
         self.physicsClientId = physics_client_id
 

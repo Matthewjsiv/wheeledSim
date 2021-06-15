@@ -7,7 +7,7 @@ class ShockTravelSensor:
     """
     Class to get shock travel from the clifford robot.
     """
-    def __init__(self, env, physics_client_id=0, topic='shock_travel'):
+    def __init__(self, env, senseParamsIn={}, physics_client_id=0, topic='shock_travel'):
         self.robot = env.robot
         self.physics_client_id = physics_client_id
         self.is_time_series=True

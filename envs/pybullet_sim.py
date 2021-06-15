@@ -7,7 +7,15 @@ from wheeledRobots.clifford.cliffordRobot import Clifford
 from wheeledSim.simController import simController
 from wheeledSim.front_camera_sensor import FrontCameraSensor
 from wheeledSim.lidar_sensor import LidarSensor
+from wheeledSim.local_heightmap_sensor import LocalHeightmapSensor
+from wheeledSim.shock_travel_sensor import ShockTravelSensor
 
+sensor_str_to_obj = {
+    'FrontCameraSensor':FrontCameraSensor,
+    'LidarSensor':LidarSensor,
+    'LocalHeightmapSensor':LocalHeightmapSensor,
+    'ShockTravelSensor':ShockTravelSensor
+}
 
 class WheeledSimEnv:
     """
@@ -23,18 +31,22 @@ class WheeledSimEnv:
         self.client = pybullet.connect(pybullet.GUI) if render else pybullet.connect(pybullet.DIRECT)
         self.robot = Clifford(params=config['cliffordParams'], physicsClientId=self.client)
 
+        # load simulation environment
+        self.env = simController(self.robot, self.client, config['simulationParams'], config['senseParams'],
+                                 config['terrainMapParams'], config['terrainParams'], config['explorationParams'])
+
         # initialize all sensors from config file
         sensors = []
         self.sense_dict = config['sensors']
 
-        for sensor in config['sensors']:
-            # TODO: Test (I can't import rospy so I can't currently test this to see if it works, but this is the idea)
-            sensors.append(self.sense_dict[sensor]['init'](self.robot, senseParamsIn=self.sense_dict[sensor]['params'],
-                                                      physicsClientId=self.client))
+        for sensor in config['sensors'].values():
+            assert sensor['type'] in sensor_str_to_obj.keys(), "{} not a valid sensor type. Valid sensor types are {}".format(sensor['type']. sensor_str_to_obj.keys())
 
-        # load simulation environment
-        self.env = simController(self.robot, self.client, config['simulationParams'], config['senseParams'],
-                                 config['terrainMapParams'], config['terrainParams'], config['explorationParams'])
+            sensor_cls = sensor_str_to_obj[sensor['type']]
+            sensor = sensor_cls(self.env, senseParamsIn=sensor.get('params', {}), topic=sensor.get('topic', None))
+            sensors.append(sensor)
+
+        self.env.set_sensors(sensors)
 
         self.T = T  # max steps allowed
         self.nsteps = 0  # number of steps taken
@@ -42,14 +54,15 @@ class WheeledSimEnv:
     @property
     def observation_space(self):
         # observation takes form (x,y,z) position, (x,y,z,w) quaternion orientation, velocity, joint state
-        state_space = gym.spaces.Box(low=np.ones(13) * -float('inf'), high=np.ones(13) + float('inf'))
+        state_space = gym.spaces.Box(low=np.ones(13) * -float('inf'), high=np.ones(13) * float('inf'))
 
         # Add sensor output to observation space dict
         sensor_space = {'state': state_space}
-        for sensor in self.sense_dict:
-            out_space = gym.spaces.Box(low=np.ones(self.sense_dict[sensor]['out_shape'])*-float('inf'),
-                                       high=np.ones(self.sense_dict[sensor]['out_shape'])*float('inf'))
-            sensor_space[sensor] = out_space
+        for sensor in self.env.sensors:
+            sensedim = [self.env.stepsPerControlLoop] + sensor.N if sensor.is_time_series else sensor.N
+            out_space = gym.spaces.Box(low=np.ones(sensedim)*-float('inf'),
+                                       high=np.ones(sensedim)*float('inf'))
+            sensor_space[sensor.topic] = out_space
 
         obs_space = gym.spaces.Dict(sensor_space)
 
@@ -95,21 +108,42 @@ class WheeledSimEnv:
 
 
 if __name__ == '__main__':
+    import matplotlib.pyplot as plt
 
     """load environment"""
     config_file = "../configurations/cliffordExampleParams.yaml"
-    env = WheeledSimEnv(config_file, T=50)
+    env = WheeledSimEnv(config_file, T=50, render=True)
+
     test = env.observation_space
     print('Observation:', test)
+
+    fig, axs = plt.subplots(2, 2, figsize=(12, 12))
+    plt.show(block=False)
 
     # run simulation 5 times
     for _ in range(5):
         terminal = False
-        time = 0
+        t = 0
         while not terminal:
-            time += 1
-            a = env.env.randomDriveAction()
+            t += 1
+#            a = env.action_space.sample()
+            a = [1.0, 0.3]
             obs, reward, terminal, i = env.step(a)
-            print('STATE = {}, ACTION = {}, t = {}'.format(obs, a, time))
+            print('STATE = {}, ACTION = {}, t = {}'.format(obs, a, t))
+
+            for ax in axs.flatten():
+                ax.cla()
+            axs[0, 0].set_title('Lidar')
+            axs[0, 1].set_title('Heightmap')
+            axs[1, 0].set_title('Front Camera')
+            axs[1, 1].set_title('Shocks')
+
+            axs[0, 0].scatter(obs['lidar'][:, 0], obs['lidar'][:, 1], s=1.)
+            axs[0, 1].imshow(obs['heightmap'])
+            axs[1, 0].imshow(obs['front_camera'][:, :, :3])
+            for i, l in zip(range(4), ['fl', 'fr', 'bl', 'br']):
+                axs[1, 1].plot(obs['shock_travel'][:, i], label='{}_travel'.format(l))
+            axs[1, 1].legend()
+            plt.pause(1e-2)
 
         env.reset()

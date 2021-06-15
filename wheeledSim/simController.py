@@ -85,6 +85,9 @@ class simController:
         self.lastStateRecordFlag = False # Flag to tell if last state of robot has been recorded or not
         self.resetRobot()
 
+    def set_sensors(self, sensors):
+        self.sensors = sensors
+        self.buf = {k:[torch.zeros(*k.N)] * self.stepsPerControlLoop for k in self.sensors if k.is_time_series}
 
     # generate new terrain
     def newTerrain(self,**kwargs):
@@ -149,9 +152,7 @@ class simController:
                 if sensor.is_time_series:
                     data[sensor].append(sensor.measure())
 
-        # import pdb;pdb.set_trace()
-        #TODO: @Ashley decide how to best return the multimodal data (likely should be a dict)
-        sense_data = {k:torch.stack(v, dim=0) if k.is_time_series else k.measure() for k,v in data.items()}
+        sense_data = {k.topic:torch.stack(v, dim=0) if k.is_time_series else k.measure() for k,v in data.items()}
 
         # Record outcome state
         newPose = self.robot.getPositionOrientation()

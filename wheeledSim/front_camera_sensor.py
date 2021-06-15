@@ -16,17 +16,15 @@ class FrontCameraSensor:
         # set up robot sensing parameters
         self.senseParams = {"FOV":45.0, # camera FOV
                             "aspect":1.0, # camera aspect
-                            "nearVal":.1, # min distance to register pixels
-                            "farVal":18.1, # max distance to register pixels
-                            "xRes": 400, #width of image
-                            "yRes": 400, #height of image
+                            "senseDepth":[0.1, 18.1], #min/max distance to register pixels (m)
+                            "senseResolution":[128, 128], #width/height of the image
                             "camDist": .11 #distance from camera point to render camera image
                             }
 
         self.senseParams.update(senseParamsIn)
         self.env = env
         self.is_time_series = False
-        self.N = [self.senseParams["xRes"],self.senseParams["yRes"],5]
+        self.N = [self.senseParams["senseResolution"][0],self.senseParams["senseResolution"][1],5]
         self.topic = topic
         self.physicsClientId = physics_client_id
 
@@ -55,13 +53,13 @@ class FrontCameraSensor:
         view_matrix = p.computeViewMatrixFromYawPitchRoll((posx,posy,posz),self.senseParams["camDist"],headingAngle,pitchAngle,rollAngle,2,physicsClientId=self.physicsClientId)
         projectionMatrix = p.computeProjectionMatrixFOV(fov=self.senseParams["FOV"],
             aspect=self.senseParams["aspect"],
-            nearVal=self.senseParams["nearVal"],
-            farVal=self.senseParams["farVal"])
+            nearVal=self.senseParams["senseDepth"][0],
+            farVal=self.senseParams["senseDepth"][1])
         # p.resetDebugVisualizerCamera(1.0,headingAngle,-15,pos,physicsClientId=self.physicsClientId)
 
         w,h,rgbImg,depthImg,segImg = p.getCameraImage(
-                self.senseParams["xRes"],
-                self.senseParams["yRes"],
+                self.senseParams["senseResolution"][0],
+                self.senseParams["senseResolution"][1],
                 view_matrix,
                 projectionMatrix,
                 renderer=p.ER_BULLET_HARDWARE_OPENGL,
@@ -70,15 +68,16 @@ class FrontCameraSensor:
 
         fullImg = np.dstack((rgbImg,depthImg))
 
-        return torch.tensor(fullImg).float()
-
+        torch_img = torch.tensor(fullImg).float()
+        torch_img[:, :, :3] /= 255. #[0-1 scaling better for learning]
+        return torch_img
 
     def to_rosmsg(self, data):
         msg = GridMap()
         msg.info.header.stamp = rospy.Time.now()
-        msg.info.header.frame_id = "map"
-        msg.info.length_x = self.senseParams["xRes"]
-        msg.info.length_y = self.senseParams["yRes"]
+        msg.info.header.frame_id = "robot"
+        msg.info.length_x = self.senseParams["senseResolution"][0]
+        msg.info.length_y = self.senseParams["senseResolution"][1]
         msg.layers.append("RGBAD")
         data = data.numpy()
         data_msg = Float32MultiArray()

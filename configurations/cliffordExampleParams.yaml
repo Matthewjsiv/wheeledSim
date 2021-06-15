@@ -43,18 +43,32 @@
 
   sensors:
       Lidar:
-          init: LidarSensor
+          type: LidarSensor
+          topic: lidar
           params:
-              senseDim: 2.*np.pi,np.pi/4.] # angular width and height of lidar sensing
+              senseDim: [6.2832, 0.7854] # [2.*np.pi,np.pi/4.] angular width and height of lidar sensing
               lidarAngleOffset: [0,0] # offset of lidar sensing angle
               lidarRange: 120 # max distance of lidar sensing
               senseResolution: [512,16] # resolution of sensing (width x height)
               removeInvalidPointsInPC: False # remove invalid points in point cloud
-              senseType: 1
+              senseType: 0
               sensorPose: [[0,0,0.3],[0,0,0,1]] # pose of sensor relative to body
-          out_shape: [8192,3] # Based on code comment (may need to be updated)
 
       FrontCamera:
-          init: FrontCameraSensor
-          params: {}
-          out_shape: [1600,4] # This is almost definitely the wrong number. Need to test to figure out shape
+          type: FrontCameraSensor
+          topic: front_camera
+          params:
+              FOV: 45.0
+              aspect: 1.0
+              senseResolution: [128, 128]
+
+      LocalHeightmapSensor:
+          type: LocalHeightmapSensor
+          topic: heightmap
+          params:
+              senseResolution: [128, 128]
+              senseDim: [5.0, 5.0]
+
+      ShockTravelSensor:
+          type: ShockTravelSensor
+          topic: shock_travel

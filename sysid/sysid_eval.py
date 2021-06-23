@@ -21,6 +21,13 @@ class ARXTransferFunction:
         self.Kx.requires_grad = grad
         self.Ku.requires_grad = grad
 
+    def reset(self):
+        """
+        Clear bufs
+        """
+        self.xbuf = torch.zeros(buf_size)
+        self.ubuf = torch.zeros(buf_size)
+
     def batch_forward(self, states, cmds):
         """
         Stateless version of forward for param fitting.
@@ -70,10 +77,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     buf_size = 5
-    data = torch.load(args.data_fp)
+    trajdata = torch.load(args.data_fp)
 
     #TODO: Convert data to batch format
-    data = generate_batch_data(data, buf_size)
+    data = generate_batch_data(trajdata, buf_size)
 
     throttle_tf = ARXTransferFunction(buf_size=buf_size)
     throttle_tf.set_grad(True)
@@ -122,6 +129,29 @@ if __name__ == '__main__':
     print("THROTTLE TF:\n", throttle_tf)
     print("STEER TF:\n", steer_tf)
 
-#    for x in torch.linspace(0, 1, 6):
-#        throttle_tf.forward(x, -x)
-#        print(throttle_tf)
+    torch.save(throttle_tf, 'throttle_tf.pt')
+    torch.save(steer_tf, 'steer_tf.pt')
+
+    #Viz
+    for _ in range(5):
+        tidx = torch.randint(trajdata['action'].shape[0], (1,)).squeeze()
+        vel = trajdata['sysid_labels'][tidx, :, 0]
+        delta = trajdata['sysid_labels'][tidx, :, 1]
+        throttle = trajdata['action'][tidx, :, 0]
+        steer = trajdata['action'][tidx, :, 1]
+
+        vpred = []
+        dpred = []
+        for v, d, t, s in zip(vel, delta, throttle, steer):
+            vpred.append(throttle_tf.forward(v, t))
+            dpred.append(steer_tf.forward(d, s))
+
+        throttle_tf.reset()
+        steer_tf.reset()
+
+        plt.plot(vel, label='vgt')
+        plt.plot(delta, label='dgt')
+        plt.plot(vpred, label='vpred')
+        plt.plot(dpred, label='dpred')
+        plt.legend()
+        plt.show()

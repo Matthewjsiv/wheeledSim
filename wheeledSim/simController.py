@@ -1,7 +1,7 @@
 import pybullet as p
 import numpy as np
 import torch
-from wheeledSim.randomTerrain import *
+from wheeledSim.terrain.randomTerrain import *
 from wheeledSim.randomExplorationPolicy import *
 
 class simController:
@@ -80,7 +80,7 @@ class simController:
         #self.randDrive = np.zeros(2)
 
         # set up robot
-        self.camFollowBot = True
+        self.camFollowBot = False
         self.robot = robot
         self.lastStateRecordFlag = False # Flag to tell if last state of robot has been recorded or not
         self.resetRobot()

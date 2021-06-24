@@ -5,10 +5,10 @@ import yaml
 
 from wheeledRobots.clifford.cliffordRobot import Clifford
 from wheeledSim.simController import simController
-from wheeledSim.front_camera_sensor import FrontCameraSensor
-from wheeledSim.lidar_sensor import LidarSensor
-from wheeledSim.local_heightmap_sensor import LocalHeightmapSensor
-from wheeledSim.shock_travel_sensor import ShockTravelSensor
+from wheeledSim.sensors.front_camera_sensor import FrontCameraSensor
+from wheeledSim.sensors.lidar_sensor import LidarSensor
+from wheeledSim.sensors.local_heightmap_sensor import LocalHeightmapSensor
+from wheeledSim.sensors.shock_travel_sensor import ShockTravelSensor
 
 sensor_str_to_obj = {
     'FrontCameraSensor':FrontCameraSensor,
@@ -37,9 +37,9 @@ class WheeledSimEnv:
 
         # initialize all sensors from config file
         sensors = []
-        self.sense_dict = config['sensors']
+        self.sense_dict = config.get('sensors', {})
 
-        for sensor in config['sensors'].values():
+        for sensor in self.sense_dict.values():
             assert sensor['type'] in sensor_str_to_obj.keys(), "{} not a valid sensor type. Valid sensor types are {}".format(sensor['type']. sensor_str_to_obj.keys())
 
             sensor_cls = sensor_str_to_obj[sensor['type']]
@@ -90,7 +90,7 @@ class WheeledSimEnv:
 
         # TODO: clean up after checking in about changing control loop function
         obs = next_state[1]  # sensing data
-        obs["state"] = np.array(next_state)[0]
+        obs["state"] = np.array(next_state[0])
 
         # increment number of steps and set terminal state if reached max steps
         self.nsteps += 1

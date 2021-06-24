@@ -8,6 +8,8 @@ import os
 import scipy as sp
 import scipy.ndimage
 import cv2
+from PIL import Image
+import matplotlib.pyplot as plt
 
 class terrain(object):
     """
@@ -38,7 +40,7 @@ class terrain(object):
     def copyGridZ(self,gridZIn):
         self.gridZ=np.copy(copyGridZ)
         self.updateTerrain()
-    def updateTerrain(self):
+    def updateTerrain(self, texture_fp=None):
         # delete previous terrain if exists
         if isinstance(self.terrainShape,int):
             p.removeBody(self.terrainBody,physicsClientId=self.physicsClientId)
@@ -54,7 +56,12 @@ class terrain(object):
         # position terrain correctly
         p.resetBasePositionAndOrientation(self.terrainBody,[-self.meshScale[0]/2.,-self.meshScale[1]/2.,self.terrainOffset], [0,0,0,1],physicsClientId=self.physicsClientId)
         # change to brown terrain
-        p.changeVisualShape(self.terrainBody, -1, textureUniqueId=-1,rgbaColor=self.color,physicsClientId=self.physicsClientId)
+
+        if texture_fp:
+            textureId = p.loadTexture(texture_fp)
+            p.changeVisualShape(self.terrainBody, -1, textureUniqueId = textureId)
+        else:
+            p.changeVisualShape(self.terrainBody, -1, textureUniqueId=-1,rgbaColor=self.color,physicsClientId=self.physicsClientId)
 
 #        textureId = p.loadTexture("wheeledSim/gimp_overlay_out.png")
         #textureId = p.loadTexture("wheeledSim/frictionRectangle.png")
@@ -176,6 +183,7 @@ class Mountains(terrain):
 class randomRockyTerrain(terrain):
     """
     This class handles the generation of random rocky terrain
+    Sam: Adding a friction map to this
     """
     # initialize terrain object
     def __init__(self,terrainMapParamsIn={},physicsClientId=0):
@@ -239,11 +247,30 @@ class randomRockyTerrain(terrain):
                 blendIndices = distFromFlat < goalBlendRadius
                 self.gridZ[blendIndices] = flatHeight + (self.gridZ[blendIndices]-flatHeight)*distFromFlat[blendIndices]/goalBlendRadius
         self.gridZ = self.gridZ-np.min(self.gridZ)
-        # rocks()
-        # print(self.gridX.shape)
-        # print(self.gridY.shape)
-        # print(self.gridZ)
-        self.updateTerrain()
+
+        #Add a friction map.
+        self.frictionMap = self.perlinNoise(self.gridX.reshape(-1),self.gridY.reshape(-1), 2*self.terrainParams["perlinScale"], 1.0).reshape(self.gridX.shape)
+        self.frictionMap -= min(-1.0, self.frictionMap.min())
+
+        im = self.get_friction_map(self.frictionMap)
+        im.save("friction_map.png")
+
+        self.updateTerrain(texture_fp="friction_map.png")
+
+    def get_friction_map(self, fmap):
+        """
+        Do the conversions to get a color image from fricmap
+        """
+
+        import pdb;pdb.set_trace()
+        cm = plt.get_cmap('coolwarm')
+        im = self.frictionMap / 2.
+        im = cm(im)
+
+        im = Image.fromarray((255*im).astype(np.uint8))
+
+        return im
+        
     def randomSteps(self,xPoints,yPoints,numCells,cellPerlinScale,cellHeightScale):
         centersX = np.random.uniform(size=numCells,low=np.min(xPoints),high=np.max(xPoints))
         centersY = np.random.uniform(size=numCells,low=np.min(yPoints),high=np.max(yPoints))

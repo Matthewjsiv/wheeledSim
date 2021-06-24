@@ -34,9 +34,11 @@
     smoothing: 0.7
     perlinScale: 2.5
     perlinHeightScale: 0.1
+    terrainType: "flatLand"
 
   senseParams:
       senseType: -1
+      recordJointStates: False
 
   explorationParams:
       explorationType: "boundedExplorationNoise"

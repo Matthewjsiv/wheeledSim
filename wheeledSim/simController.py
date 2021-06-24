@@ -59,6 +59,8 @@ class simController:
                 self.terrain = randomSloped(terrainMapParamsIn,physicsClientId=self.physicsClientId)
             elif self.terrainParamsIn["terrainType"] == "mountains":
                 self.terrain = Mountains(terrainMapParamsIn,physicsClientId=self.physicsClientId)
+            elif self.terrainParamsIn["terrainType"] == "flatLand":
+                self.terrain = Flatland(terrainMapParamsIn,physicsClientId=self.physicsClientId)
             else:
                 self.terrain = self.terrainParamsIn["terrainType"](terrainMapParamsIn,physicsClientId=self.physicsClientId)
             self.newTerrain()
@@ -165,7 +167,7 @@ class simController:
             self.stopMoveCount +=1
 
         self.lastAbsoluteState = self.getObservation()
-        self.lastStateRecordFlag = True
+        #self.lastStateRecordFlag = True
         newStateData = [self.lastAbsoluteState,sense_data]
         return stateActionData,newStateData,self.simTerminateCheck(newPose)
 
@@ -351,6 +353,20 @@ class simController:
                 if self.senseParams["removeInvalidPointsInPC"]:
                     lidarPoints = lidarPoints[:,rangeData.reshape(-1)<1]
                 sensorData = lidarPoints
+
+
+                b2local = p.invertTransform(sensorAbsolutePose[0],sensorAbsolutePose[1])
+                # for i in range(sensorData.shape[1]):
+                #     test = np.array(p.multiplyTransforms(b2local[0],b2local[1],sensorData[:,i],sensorAbsolutePose[1])[0])
+                #     sensorData[:,i] = test
+
+                #vectorized form gives >200 times speed up over for loop using pybullet method
+                # :)
+                bt = np.expand_dims(np.array(b2local[0]),axis=0)
+                bb = np.array(p.getMatrixFromQuaternion(b2local[1])).reshape([3,3])
+                sB = np.array(p.getMatrixFromQuaternion(sensorAbsolutePose[1])).reshape([3,3])
+                sensorData = bt.T + bb @ sensorData
+
         if expandDim:
             sensorData = np.expand_dims(sensorData,axis=0)
         return sensorData

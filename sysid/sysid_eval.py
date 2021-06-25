@@ -8,7 +8,12 @@ class ARXTransferFunction:
     """
     Transfer function that is linear in the last k states (targets) and actions.
     """
-    def __init__(self, buf_size=3, device='cpu'):
+    def __init__(self, buf_size=3, use_last_state=False, order=1, device='cpu'):
+        """
+        Args:
+            use_last_state: If True, just use lase item in buf (TODO: Change the forward func.)
+            order: Square the input up to this many times.
+        """
         self.Kx = torch.zeros(buf_size)
         self.Ku = torch.zeros(buf_size)
 

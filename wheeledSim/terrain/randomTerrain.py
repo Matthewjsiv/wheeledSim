@@ -59,7 +59,7 @@ class terrain(object):
 
         if texture_fp:
             textureId = p.loadTexture(texture_fp)
-            p.changeVisualShape(self.terrainBody, -1, textureUniqueId = textureId)
+            p.changeVisualShape(self.terrainBody, -1, textureUniqueId = textureId, rgbaColor=[1, 1, 1, 1])
         else:
             p.changeVisualShape(self.terrainBody, -1, textureUniqueId=-1,rgbaColor=self.color,physicsClientId=self.physicsClientId)
 
@@ -249,7 +249,7 @@ class randomRockyTerrain(terrain):
         self.gridZ = self.gridZ-np.min(self.gridZ)
 
         #Add a friction map.
-        self.frictionMap = self.perlinNoise(self.gridX.reshape(-1),self.gridY.reshape(-1), 2*self.terrainParams["perlinScale"], 1.0).reshape(self.gridX.shape)
+        self.frictionMap = self.perlinNoise(self.gridX.reshape(-1),self.gridY.reshape(-1), 0.5*self.terrainParams["perlinScale"], 1.0).reshape(self.gridX.shape)
         self.frictionMap -= min(-1.0, self.frictionMap.min())
 
         im = self.get_friction_map(self.frictionMap)
@@ -261,8 +261,6 @@ class randomRockyTerrain(terrain):
         """
         Do the conversions to get a color image from fricmap
         """
-
-        import pdb;pdb.set_trace()
         cm = plt.get_cmap('coolwarm')
         im = self.frictionMap / 2.
         im = cm(im)

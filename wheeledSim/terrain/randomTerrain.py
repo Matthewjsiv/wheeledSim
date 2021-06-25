@@ -198,6 +198,60 @@ class Mountains(terrain):
 #         balls.append(sphereUid)
 #         balls_init_pos.append([i * 3 * sphereRadius, j * 3 * sphereRadius, 2])
 
+
+class basicFriction(terrain):
+    """
+    Basic terrain for friction debugging
+    """
+    # initialize terrain object
+    def __init__(self,terrainMapParamsIn={},physicsClientId=0):
+        super().__init__(terrainMapParamsIn,physicsClientId)
+        self.terrainParams = {"AverageAreaPerCell":1,
+                            "cellPerlinScale":5,
+                            "cellHeightScale":0.9,
+                            "smoothing":0.7,
+                            "perlinScale":2.5,
+                            "perlinHeightScale":0.1,
+                            "flatRadius":1,
+                            "blendRadius":0.5}
+    # generate new terrain. (Delete old terrain if exists)
+    def generate(self,terrainParamsIn={},copyBlockHeight=None,goal=None):
+        self.terrainParams.update(terrainParamsIn)
+
+        #flat land
+        self.gridZ = np.zeros([300,300])
+
+        #Add a friction map.
+        # self.frictionMap = self.perlinNoise(self.gridX.reshape(-1),self.gridY.reshape(-1), 0.5*self.terrainParams["perlinScale"], 1.0).reshape(self.gridX.shape)
+        # self.frictionMap -= min(-1.0, self.frictionMap.min())
+
+        fm = np.ones([300,300]) - .6
+        fm[50:100,150:200] = 2
+
+        self.frictionMap = fm
+
+        im = self.get_friction_map()
+        im.save("friction_map.png")
+
+        self.updateTerrain(texture_fp="friction_map.png")
+
+    def get_friction_map(self):
+        """
+        Do the conversions to get a color image from fricmap
+        """
+        cm = plt.get_cmap('coolwarm')
+        im = np.fliplr(self.frictionMap) / 2.
+        im = cm(im)
+
+        im = Image.fromarray((255*im).astype(np.uint8))
+
+        return im
+
+    def perlinNoise(self,xPoints,yPoints,perlinScale,heightScale):
+        randomSeed = np.random.rand(2)*1000
+        return np.array([pnoise2(randomSeed[0]+xPoints[i]*perlinScale,randomSeed[1]+yPoints[i]*perlinScale) for i in range(len(xPoints))])*heightScale
+
+
 class randomRockyTerrain(terrain):
     """
     This class handles the generation of random rocky terrain
@@ -270,17 +324,17 @@ class randomRockyTerrain(terrain):
         self.frictionMap = self.perlinNoise(self.gridX.reshape(-1),self.gridY.reshape(-1), 0.5*self.terrainParams["perlinScale"], 1.0).reshape(self.gridX.shape)
         self.frictionMap -= min(-1.0, self.frictionMap.min())
 
-        im = self.get_friction_map(self.frictionMap)
+        im = self.get_friction_map()
         im.save("friction_map.png")
 
         self.updateTerrain(texture_fp="friction_map.png")
 
-    def get_friction_map(self, fmap):
+    def get_friction_map(self):
         """
         Do the conversions to get a color image from fricmap
         """
         cm = plt.get_cmap('coolwarm')
-        im = self.frictionMap / 2.
+        im = np.fliplr(self.frictionMap) / 2.
         im = cm(im)
 
         im = Image.fromarray((255*im).astype(np.uint8))

@@ -28,8 +28,8 @@ class WheeledSimEnv:
         stream = open(config_file, 'r')
         config = yaml.load(stream, Loader=yaml.FullLoader)
 
-        self.client = pybullet.connect(pybullet.GUI) if render else pybullet.connect(pybullet.DIRECT)
-        self.robot = Clifford(params=config['cliffordParams'], physicsClientId=self.client)
+        self.client = pybullet.connect(pybullet.GUI, options=config['backgroundColor']) if render else pybullet.connect(pybullet.DIRECT)
+        self.robot = Clifford(params=config['cliffordParams'], t_params = config['terrainMapParams'], physicsClientId=self.client)
 
         # load simulation environment
         self.env = simController(self.robot, self.client, config['simulationParams'], config['senseParams'],
@@ -129,7 +129,7 @@ if __name__ == '__main__':
 #            a = env.action_space.sample()
             a = [1.0, 0.3]
             obs, reward, terminal, i = env.step(a)
-            print('STATE = {}, ACTION = {}, t = {}'.format(obs, a, t))
+            # print('STATE = {}, ACTION = {}, t = {}'.format(obs, a, t))
 
             for ax in axs.flatten():
                 ax.cla()

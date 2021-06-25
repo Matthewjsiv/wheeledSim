@@ -20,12 +20,14 @@
     moveThreshold: 0.1
     maxStopMoveLength: 250
 
+  backgroundColor: '--background_color_red=.01 --background_color_green=0.1 --background_color_blue=0.2'
+
   terrainMapParams:
     mapWidth: 300  # width of matrix
     mapHeight: 300  # height of matrix
     widthScale: 0.1  # each pixel corresponds to this distance
     heightScale: 0.1
-    depthScale: 1
+    depthScale: 2
 
   terrainParams:
     AverageAreaPerCell: 1.0
@@ -34,7 +36,7 @@
     smoothing: 0.7
     perlinScale: 2.5
     perlinHeightScale: 0.1
-    terrainType: "flatLand"
+    terrainType: "randomRockyTerrain"
 
   senseParams:
       senseType: -1
@@ -63,6 +65,8 @@
               FOV: 45.0
               aspect: 1.0
               senseResolution: [128, 128]
+              sensorPose: [[0.06,0,0.14],[0,0,0,1]]
+              sensorAngle: 10
 
       LocalHeightmapSensor:
           type: LocalHeightmapSensor

@@ -31,23 +31,26 @@ class FrontCameraSensor:
     def measure(self):
         pose = self.env.robot.getPositionOrientation()
         # pose = self.env.getPositionOrientation()
+        pose = p.multiplyTransforms(pose[0],pose[1],self.senseParams["sensorPose"][0],self.senseParams["sensorPose"][1])
+
         posx,posy,posz = pose[0][0],pose[0][1],pose[0][2]
 
         rotation = p.getMatrixFromQuaternion(pose[1])
         forwardDir = [rotation[0], rotation[3], rotation[6]]
         upDir = [rotation[2], rotation[5], rotation[8]]
 
-        posx += forwardDir[0]*.12
-        posy += forwardDir[1]*.12
-        posz += forwardDir[2]*.12
-        posx += upDir[0]*.12
-        posy += upDir[1]*.12
-        posz += upDir[2]*.12
+        # posx += forwardDir[0]*.12
+        # posy += forwardDir[1]*.12
+        # posz += forwardDir[2]*.12
+        # posx += upDir[0]*.12
+        # posy += upDir[1]*.12
+        # posz += upDir[2]*.12
 
         q = pose[1]
 
         rollAngle = np.arctan2(2.0 * (q[2]*q[1] + q[3]*q[0]),1.0 - 2.0*(q[0]*q[0] + q[1]*q[1]))*180/np.pi
-        pitchAngle = -1*np.arcsin(2.0 * (q[1]*q[3] - q[2]*q[0]))*180/np.pi
+        #angle down a little bit
+        pitchAngle = -1*np.arcsin(2.0 * (q[1]*q[3] - q[2]*q[0]))*180/np.pi - self.senseParams["sensorAngle"]
         headingAngle = np.arctan2(2.0 * (q[2]*q[3] + q[0]*q[1]), -1.0 + 2.0*(q[3]*q[3] + q[0]*q[0]))*180/np.pi - 90
 
         view_matrix = p.computeViewMatrixFromYawPitchRoll((posx,posy,posz),self.senseParams["camDist"],headingAngle,pitchAngle,rollAngle,2,physicsClientId=self.physicsClientId)

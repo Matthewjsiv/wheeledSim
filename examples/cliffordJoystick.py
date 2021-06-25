@@ -48,7 +48,7 @@ if __name__=="__main__":
                     "traction":1.25,
                     "massScale":1.0,
                     "frictionMap": fm}
-    robot = Clifford(params=cliffordParams,physicsClientId=physicsClient)
+
     keyboard.on_press_key("left", handleLeftKey)
     keyboard.on_release_key("left", handleTurnRelease)
     keyboard.on_press_key("right", handleRightKey)
@@ -73,13 +73,18 @@ if __name__=="__main__":
                     "widthScale":0.14, # each pixel corresponds to this distance
                     "heightScale":0.14,
                     "depthScale":28}
+    terrainMapParams = {"mapWidth":300, # width of matrix
+                    "mapHeight":300, # height of matrix
+                    "widthScale":0.1, # each pixel corresponds to this distance
+                    "heightScale":0.1,
+                    "depthScale":1}
     terrainParams = {"AverageAreaPerCell":1.0,
                     "cellPerlinScale":5,
                     "cellHeightScale":0.6, # parameters for generating terrain
                     "smoothing":0.7,
                     "perlinScale":2.5,
                     "perlinHeightScale":0.1,
-                    "terrainType": "mountains"}
+                    "terrainType": "basicFriction"}
     # robot sensor parameters
     heightMapSenseParams = {} # use base params for heightmap
     lidarDepthParams = {"senseDim":[2.*np.pi,np.pi/4.], # angular width and height of lidar sensing
@@ -95,6 +100,8 @@ if __name__=="__main__":
     noSenseParams = {"senseType":-1}
     senseParams = noSenseParams # use this kind of sensing
     # senseParams = lidarPCParams
+
+    robot = Clifford(params=cliffordParams,t_params = terrainMapParams, physicsClientId=physicsClient)
 
     # initialize simulation controller
     sim = simController(robot,simulationParamsIn=simParams,senseParamsIn=senseParams,terrainMapParamsIn=terrainMapParams,terrainParamsIn=terrainParams,physicsClientId=physicsClient)

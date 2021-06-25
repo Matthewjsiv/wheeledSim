@@ -61,6 +61,8 @@ class simController:
                 self.terrain = Mountains(terrainMapParamsIn,physicsClientId=self.physicsClientId)
             elif self.terrainParamsIn["terrainType"] == "flatLand":
                 self.terrain = Flatland(terrainMapParamsIn,physicsClientId=self.physicsClientId)
+            elif self.terrainParamsIn["terrainType"] == "basicFriction":
+                self.terrain = basicFriction(terrainMapParamsIn,physicsClientId=self.physicsClientId)
             else:
                 self.terrain = self.terrainParamsIn["terrainType"](terrainMapParamsIn,physicsClientId=self.physicsClientId)
             self.newTerrain()
@@ -85,6 +87,8 @@ class simController:
         self.camFollowBot = False
         self.robot = robot
         self.lastStateRecordFlag = False # Flag to tell if last state of robot has been recorded or not
+        if self.terrainParamsIn["terrainType"] == "randomRockyTerrain" or self.terrainParamsIn["terrainType"] == "basicFriction":
+            self.robot.params["frictionMap"] = self.terrain.frictionMap
         self.resetRobot()
 
     def set_sensors(self, sensors):

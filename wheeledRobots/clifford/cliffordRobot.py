@@ -4,7 +4,7 @@ import os
 
 # This class adds a clifford (wheeled off road) robot to a given PyBullet simulation
 class Clifford:
-    def __init__(self,sdfRootPath=None,physicsClientId=0, params={}):
+    def __init__(self,t_params, sdfRootPath=None,physicsClientId=0, params={}):
         if sdfRootPath is None:
             sdfRootPath = os.path.abspath(os.path.join(os.path.realpath(__file__),'../'))
         # this is the folder that the file clifford.sdf is in (relative to the folder this script is in)
@@ -29,6 +29,10 @@ class Clifford:
                         "frtire": 1.5,
                         "bltire":1.5,
                         "brtire":1.5}
+        self.mapWidth = t_params["mapWidth"]
+        self.mapHeight = t_params["mapHeight"]
+        self.widthScale = t_params["widthScale"]
+        self.heightScale = t_params["heightScale"]
         # change default params if defined
         for param in self.params:
             if param in params:
@@ -157,8 +161,8 @@ class Clifford:
 
     def updateTraction(self):
         pwb,rwb = self.getPositionOrientation()
-        x= int(pwb[0]/.14 + 512/2)
-        y = int(pwb[1]/.14 + 512/2)
+        x= int(pwb[0]/self.widthScale + self.mapWidth/2)
+        y = int(pwb[1]/self.heightScale + self.mapHeight/2)
         fm = self.params["frictionMap"]
         newtract = fm[y,x]
         if newtract != self.params["traction"]:
@@ -170,9 +174,11 @@ class Clifford:
         tlist = ['frtire','fltire','brtire','bltire']
         poses = self.getTirePos()
         fm = self.params["frictionMap"]
+
+        #width and height might need to be switched - not sure atm bc it's square
         for t in range(4):
-            x = int(poses[t][0][0]/.14 + 512/2)
-            y = int(poses[t][0][1]/.14 + 512/2)
+            x = int(poses[t][0][0]/self.widthScale + self.mapWidth/2)
+            y = int(poses[t][0][1]/self.heightScale + self.mapHeight/2)
             newtract = fm[y,x]
             if newtract != self.params[tlist[t]]:
                 self.changeTireTraction(tlist[t],newtract)

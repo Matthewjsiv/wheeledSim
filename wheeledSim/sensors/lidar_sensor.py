@@ -68,6 +68,19 @@ class LidarSensor:
                 lidarPoints = lidarPoints[:,rangeData.reshape(-1)<1]
             sensorData = lidarPoints
         #shape = (3, 8192) before transpose
+        b2local = p.invertTransform(sensorAbsolutePose[0],sensorAbsolutePose[1])
+        # for i in range(sensorData.shape[0]):
+        #     test = np.array(p.multiplyTransforms(b2local[0],b2local[1],sensorData[i,:],sensorAbsolutePose[1])[0])
+        #     sensorData[i,:] = test
+
+        #vectorized form gives >200 times speed up over for loop using pybullet method
+        # :)
+
+        bt = np.expand_dims(np.array(b2local[0]),axis=0)
+        bb = np.array(p.getMatrixFromQuaternion(b2local[1])).reshape([3,3])
+        sB = np.array(p.getMatrixFromQuaternion(sensorAbsolutePose[1])).reshape([3,3])
+        sensorData = bt.T + bb @ sensorData
+
         sensorData = sensorData.T
 
         return torch.tensor(sensorData).float()

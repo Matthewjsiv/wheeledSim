@@ -113,6 +113,24 @@ class randomSloped(terrain):
         self.gridZ = self.gridX*slope
         self.updateTerrain()
 
+class Flatland(terrain):
+    """
+    This class generates flat terrain with random slope
+    """
+    def __init__(self,terrainMapParamsIn={},physicsClientId=0):
+        super().__init__(terrainMapParamsIn,physicsClientId)
+        self.terrainParams = {"gmm_centers":[0],
+                            "gmm_vars":[1],
+                            "gmm_weights":[1]}
+    def generate(self,terrainParamsIn={}):
+        from PIL import Image
+
+        depth = np.zeros([300,300])
+        # depth[200:250,200:250] = 2 #box
+        self.gridZ = depth
+
+        self.updateTerrain()
+
 class Mountains(terrain):
     """
     This class generates flat terrain with random slope
@@ -268,7 +286,7 @@ class randomRockyTerrain(terrain):
         im = Image.fromarray((255*im).astype(np.uint8))
 
         return im
-        
+
     def randomSteps(self,xPoints,yPoints,numCells,cellPerlinScale,cellHeightScale):
         centersX = np.random.uniform(size=numCells,low=np.min(xPoints),high=np.max(xPoints))
         centersY = np.random.uniform(size=numCells,low=np.min(yPoints),high=np.max(yPoints))

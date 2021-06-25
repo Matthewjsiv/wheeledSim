@@ -2,13 +2,14 @@ import gym
 import numpy as np
 import pybullet
 import yaml
+import time
 
 from wheeledRobots.clifford.cliffordRobot import Clifford
 from wheeledSim.simController import simController
-from wheeledSim.sensors.front_camera_sensor import FrontCameraSensor
-from wheeledSim.sensors.lidar_sensor import LidarSensor
-from wheeledSim.sensors.local_heightmap_sensor import LocalHeightmapSensor
-from wheeledSim.sensors.shock_travel_sensor import ShockTravelSensor
+from wheeledSim.front_camera_sensor import FrontCameraSensor
+from wheeledSim.lidar_sensor import LidarSensor
+from wheeledSim.local_heightmap_sensor import LocalHeightmapSensor
+from wheeledSim.shock_travel_sensor import ShockTravelSensor
 
 sensor_str_to_obj = {
     'FrontCameraSensor':FrontCameraSensor,
@@ -16,6 +17,10 @@ sensor_str_to_obj = {
     'LocalHeightmapSensor':LocalHeightmapSensor,
     'ShockTravelSensor':ShockTravelSensor
 }
+
+"""
+Slight modifications for getting step response
+"""
 
 class WheeledSimEnv:
     """
@@ -37,9 +42,9 @@ class WheeledSimEnv:
 
         # initialize all sensors from config file
         sensors = []
-        self.sense_dict = config.get('sensors', {})
+        self.sense_dict = config['sensors']
 
-        for sensor in self.sense_dict.values():
+        for sensor in config['sensors'].values():
             assert sensor['type'] in sensor_str_to_obj.keys(), "{} not a valid sensor type. Valid sensor types are {}".format(sensor['type']. sensor_str_to_obj.keys())
 
             sensor_cls = sensor_str_to_obj[sensor['type']]
@@ -87,11 +92,11 @@ class WheeledSimEnv:
     def step(self, action):
         # get state action, next state, and boolean terminal state from simulation
         state_action, next_state, sim_t = self.env.controlLoopStep(action)
-
+        # print(next_state)
         # TODO: clean up after checking in about changing control loop function
         obs = next_state[1]  # sensing data
-        obs["state"] = np.array(next_state[0])
-
+        obs["state"] = np.array(next_state)[0]
+        # print(len(obs["state"]))
         # increment number of steps and set terminal state if reached max steps
         self.nsteps += 1
         timeout = self.get_terminal()
@@ -112,38 +117,59 @@ if __name__ == '__main__':
 
     """load environment"""
     config_file = "../configurations/cliffordExampleParams.yaml"
-    env = WheeledSimEnv(config_file, T=50, render=True)
+    env = WheeledSimEnv(config_file, T=2200, render=True)
 
     test = env.observation_space
     print('Observation:', test)
 
-    fig, axs = plt.subplots(2, 2, figsize=(12, 12))
-    plt.show(block=False)
+    # fig, axs = plt.subplots(2, 2, figsize=(12, 12))
+    # plt.show(block=False)
 
     # run simulation 5 times
-    for _ in range(5):
+    svals = np.array([])
+    avals = np.array([])
+    tvals = np.array([])
+    now = time.perf_counter()
+    start = now
+    for _ in range(1):
         terminal = False
         t = 0
         while not terminal:
             t += 1
 #            a = env.action_space.sample()
-            a = [1.0, 0.3]
+            a = [1.0, 0.0]
             obs, reward, terminal, i = env.step(a)
-            print('STATE = {}, ACTION = {}, t = {}'.format(obs, a, t))
+            # print('STATE = {}, ACTION = {}, t = {}'.format(obs, a, t))
 
-            for ax in axs.flatten():
-                ax.cla()
-            axs[0, 0].set_title('Lidar')
-            axs[0, 1].set_title('Heightmap')
-            axs[1, 0].set_title('Front Camera')
-            axs[1, 1].set_title('Shocks')
-
-            axs[0, 0].scatter(obs['lidar'][:, 0], obs['lidar'][:, 1], s=1.,c=obs['lidar'][:,2],cmap=plt.get_cmap('viridis'))
-            axs[0, 1].imshow(obs['heightmap'])
-            axs[1, 0].imshow(obs['front_camera'][:, :, :3])
-            for i, l in zip(range(4), ['fl', 'fr', 'bl', 'br']):
-                axs[1, 1].plot(obs['shock_travel'][:, i], label='{}_travel'.format(l))
-            axs[1, 1].legend()
-            plt.pause(1e-2)
+            # for ax in axs.flatten():
+            #     ax.cla()
+            # axs[0, 0].set_title('Lidar')
+            # axs[0, 1].set_title('Heightmap')
+            # axs[1, 0].set_title('Front Camera')
+            # axs[1, 1].set_title('Shocks')
+            #
+            # axs[0, 0].scatter(obs['lidar'][:, 0], obs['lidar'][:, 1], s=1.)
+            # axs[0, 1].imshow(obs['heightmap'])
+            # axs[1, 0].imshow(obs['front_camera'][:, :, :3])
+            # for i, l in zip(range(4), ['fl', 'fr', 'bl', 'br']):
+            #     axs[1, 1].plot(obs['shock_travel'][:, i], label='{}_travel'.format(l))
+            # print(obs['state'][7])
+            # axs[1, 1].legend()
+            # plt.pause(1e-2)
+            speed = np.linalg.norm(obs['state'][7:10])
+            # print(speed)
+            svals = np.hstack([svals,speed])
+            avals = np.hstack([avals,40.0/10.0])
+            # print(t)
+            time_diff = time.perf_counter()- now
+            tvals = np.hstack([tvals,time_diff])
+            # print(time.perf_counter() - start)
+            now = time.perf_counter()
+            if t >= 1000:
+                print('here')
+                np.save('../sysid_data/s_40',svals)
+                np.save('../sysid_data/a_40',avals)
+                np.save('../sysid_data/t_40',tvals)
+                break
 
         env.reset()

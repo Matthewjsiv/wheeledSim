@@ -38,7 +38,7 @@ class terrain(object):
         self.terrainBody = []
         self.color = [0.82,0.71,0.55,1]
     def copyGridZ(self,gridZIn):
-        self.gridZ=np.copy(copyGridZ)
+        self.gridZ=np.copy(gridZIn)
         self.updateTerrain()
     def updateTerrain(self, texture_fp=None):
         # delete previous terrain if exists
@@ -266,6 +266,9 @@ class randomRockyTerrain(terrain):
                             "smoothing":0.7,
                             "perlinScale":2.5,
                             "perlinHeightScale":0.1,
+                            "frictionPerlinScale":1.0,
+                            "frictionScale":1.0,
+                            "frictionOffset":0.2,
                             "flatRadius":1,
                             "blendRadius":0.5}
     # generate new terrain. (Delete old terrain if exists)
@@ -321,8 +324,9 @@ class randomRockyTerrain(terrain):
         self.gridZ = self.gridZ-np.min(self.gridZ)
 
         #Add a friction map.
-        self.frictionMap = self.perlinNoise(self.gridX.reshape(-1),self.gridY.reshape(-1), 0.5*self.terrainParams["perlinScale"], 1.0).reshape(self.gridX.shape)
-        self.frictionMap -= min(-1.0, self.frictionMap.min())
+        self.frictionMap = self.perlinNoise(self.gridX.reshape(-1),self.gridY.reshape(-1), 0.5*self.terrainParams["frictionPerlinScale"], self.terrainParams['frictionScale']/2.0).reshape(self.gridX.shape)
+#        self.frictionMap -= min(-1.0, self.frictionMap.min())
+        self.frictionMap -= min(0., self.frictionMap.min()) - self.terrainParams["frictionOffset"]
 
         im = self.get_friction_map()
         im.save("friction_map.png")
@@ -333,8 +337,8 @@ class randomRockyTerrain(terrain):
         """
         Do the conversions to get a color image from fricmap
         """
-        cm = plt.get_cmap('coolwarm')
-        im = np.fliplr(self.frictionMap) / 2.
+        cm = plt.get_cmap('RdYlGn')
+        im = np.fliplr(self.frictionMap - self.terrainParams["frictionOffset"]) / (self.terrainParams['frictionScale']/1.5)
         im = cm(im)
 
         im = Image.fromarray((255*im).astype(np.uint8))

@@ -20,14 +20,16 @@ class LocalHeightmapSensor:
         self.senseParams.update(senseParamsIn)
         self.env = env
         self.is_time_series = False
-        self.N = self.senseParams["senseResolution"]
+        self.N = [1] + self.senseParams["senseResolution"]
         self.topic = topic
 
     def measure(self):
         robotPose = self.env.robot.getPositionOrientation()
         sensorAbsolutePose = p.multiplyTransforms(robotPose[0],robotPose[1],self.senseParams["sensorPose"][0],self.senseParams["sensorPose"][1])
         heightmap = self.env.terrain.sensedHeightMap(sensorAbsolutePose,self.senseParams["senseDim"],self.senseParams["senseResolution"])
-        return torch.tensor(heightmap).float()
+        heightmap = torch.tensor(heightmap).float().unsqueeze(0) #Good practice to prepend a null channel dim
+        heightmap[heightmap.isnan()] -1. #No nans
+        return heightmap
 
     def to_rosmsg(self, data):
         msg = GridMap()

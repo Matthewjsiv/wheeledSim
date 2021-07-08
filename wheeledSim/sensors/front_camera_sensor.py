@@ -18,13 +18,15 @@ class FrontCameraSensor:
                             "aspect":1.0, # camera aspect
                             "senseDepth":[0.1, 18.1], #min/max distance to register pixels (m)
                             "senseResolution":[128, 128], #width/height of the image
-                            "camDist": .11 #distance from camera point to render camera image
+                            "camDist": .11, #distance from camera point to render camera image
+                            "sensorPose":[[0., 0., 0.], [0., 0., 0., 1.]],
+                            "sensorAngle":0.
                             }
 
         self.senseParams.update(senseParamsIn)
         self.env = env
         self.is_time_series = False
-        self.N = [self.senseParams["senseResolution"][0],self.senseParams["senseResolution"][1],5]
+        self.N = [4, self.senseParams["senseResolution"][0],self.senseParams["senseResolution"][1]]
         self.topic = topic
         self.physicsClientId = physics_client_id
 
@@ -69,10 +71,11 @@ class FrontCameraSensor:
                 flags=p.ER_NO_SEGMENTATION_MASK,
                 physicsClientId=self.physicsClientId)
 
-        fullImg = np.dstack((rgbImg,depthImg))
-
+        fullImg = np.dstack((rgbImg[:, :, :-1],depthImg)) #I'm removing the specularity thing.
         torch_img = torch.tensor(fullImg).float()
-        torch_img[:, :, :3] /= 255. #[0-1 scaling better for learning]
+        torch_img = torch_img.permute(2, 0, 1)
+        torch_img[:3, :, :] /= 255. #[0-1 scaling better for learning]
+
         return torch_img
 
     def to_rosmsg(self, data):

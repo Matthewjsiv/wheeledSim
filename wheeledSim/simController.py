@@ -184,7 +184,11 @@ class simController:
             obs = list(pose[0]) + list(pose[1]) + vel[:] + joints[:]
         else:
             obs = list(pose[0]) + list(pose[1]) + vel[:]
-        return obs
+
+        sense_data = {s.topic:torch.stack([s.measure() for _ in range(self.stepsPerControlLoop)], dim=0) if s.is_time_series else s.measure() for s in self.sensors}
+
+        return [obs, sense_data]
+
     # check if simulation should be terminated
     def simTerminateCheck(self,robotPose):
         termSim = False

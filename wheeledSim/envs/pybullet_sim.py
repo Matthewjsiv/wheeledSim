@@ -1,4 +1,5 @@
 import gym
+import torch
 import numpy as np
 import pybullet
 import yaml
@@ -28,7 +29,7 @@ class WheeledSimEnv:
         stream = open(config_file, 'r')
         config = yaml.load(stream, Loader=yaml.FullLoader)
 
-        self.client = pybullet.connect(pybullet.GUI, options=config['backgroundColor']) if render else pybullet.connect(pybullet.DIRECT)
+        self.client = pybullet.connect(pybullet.GUI, options=config.get('backgroundColor', "")) if render else pybullet.connect(pybullet.DIRECT)
         self.robot = Clifford(params=config['cliffordParams'], t_params = config['terrainMapParams'], physicsClientId=self.client)
 
         # load simulation environment
@@ -80,9 +81,10 @@ class WheeledSimEnv:
         self.nsteps = 0
 
         # get new observation
-        obs = self.env.getObservation()
+        obs, sensedata = self.env.getObservation()
+        sensedata['state'] = torch.tensor(obs).float()
 
-        return np.array(obs)
+        return sensedata
 
     def step(self, action):
         # get state action, next state, and boolean terminal state from simulation
@@ -90,7 +92,7 @@ class WheeledSimEnv:
 
         # TODO: clean up after checking in about changing control loop function
         obs = next_state[1]  # sensing data
-        obs["state"] = np.array(next_state[0])
+        obs["state"] = torch.tensor(next_state[0][0]).float()
 
         # increment number of steps and set terminal state if reached max steps
         self.nsteps += 1
@@ -101,7 +103,7 @@ class WheeledSimEnv:
 
     def get_reward(self, obs):
         # can be updated with a reward function in future work
-        return 0
+        return torch.tensor(0.)
 
     def get_terminal(self):
         return (self.T > 0) and (self.nsteps >= self.T)

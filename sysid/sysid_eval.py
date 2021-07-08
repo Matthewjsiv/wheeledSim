@@ -110,11 +110,11 @@ if __name__ == '__main__':
 
     #Train
     if args.throttle_tf is None or args.steer_tf is None:
-        throttle_tf = ARXTransferFunction(buf_size=buf_size, only_last_state=True, order=1)
+        throttle_tf = ARXTransferFunction(buf_size=buf_size, only_last_state=False, order=3)
         throttle_tf.set_grad(True)
         throttle_opt = optim.LBFGS([throttle_tf.Kx, throttle_tf.Ku])
 
-        steer_tf = ARXTransferFunction(buf_size=buf_size, only_last_state=True, order=1)
+        steer_tf = ARXTransferFunction(buf_size=buf_size, only_last_state=False, order=3)
         steer_tf.set_grad(True)
         steer_opt = optim.LBFGS([steer_tf.Kx, steer_tf.Ku])
 
@@ -171,17 +171,17 @@ if __name__ == '__main__':
         throttle = trajdata['action'][tidx][:, 0]
         steer = trajdata['action'][tidx][:, 1]
 
-        vpred = []
-        dpred = []
+        vpred = [vel[0]]
+        dpred = [delta[0]]
         throttle_tf.reset()
         steer_tf.reset()
 
         for v, d, t, s in zip(vel, delta, throttle, steer):
-            vpred.append(throttle_tf.forward(v, t))
-            dpred.append(steer_tf.forward(d, s))
+            vpred.append(throttle_tf.forward(vpred[-1], t))
+            dpred.append(steer_tf.forward(dpred[-1], s))
 
-        vpred = torch.tensor(vpred)
-        dpred = torch.tensor(dpred)
+        vpred = torch.tensor(vpred[1:])
+        dpred = torch.tensor(dpred[1:])
 
         throttle_error = (vpred - vel).pow(2).mean().sqrt()
         steer_error = (dpred - steer).pow(2).mean().sqrt()

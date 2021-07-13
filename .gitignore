@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 *.swp
 *.pt
+friction_maps/
 
 # C extensions
 *.so

@@ -2,37 +2,44 @@ import rospy
 import numpy as np
 import torch
 import pybullet as p
+import matplotlib.pyplot as plt
 
 from grid_map_msgs.msg import GridMap
 from std_msgs.msg import Float32MultiArray, MultiArrayDimension
 
-class LocalHeightmapSensor:
+class LocalFrictionmapSensor:
     """
-    Sensor that gets local heightmaps. Needs the robot to get pose, and terrain.
-    For sense params, need pose to the robot body, the size and the resolution.
+    Same sensor as the local heightmap sensor, but for the friction map.
+    Give the option to return GT friction or a colormap.
     """
     def __init__(self, env, senseParamsIn={}, physics_client_id=0, topic='local_heightmap'):
         # set up robot sensing parameters
         self.senseParams = {"senseDim":[5, 5], # width (m) and height (m) of terrain map
                             "senseResolution":[128, 128], # array giving resolution of map output (num pixels wide x num pixels high)
                             "sensorPose":[[0,0,0],[0,0,0,1]], # pose of sensor relative to body
-                            "minHeight":-5.0, #Sanity check on min height
-                            "maxHeight":5.0, #Sanity check on max height
+                            "cmap":"" #Colormap to convert to (no cmap by default)
                             }
         self.senseParams.update(senseParamsIn)
         self.env = env
         self.is_time_series = False
-        self.N = [1] + self.senseParams["senseResolution"]
         self.topic = topic
+        self.cmap = plt.get_cmap(self.senseParams["cmap"]) if not self.senseParams["cmap"]=="" else None
+        self.N = [4] + self.senseParams["senseResolution"] if self.cmap else [1] + self.senseParams["senseResolution"]
 
     def measure(self):
         robotPose = self.env.robot.getPositionOrientation()
         sensorAbsolutePose = p.multiplyTransforms(robotPose[0],robotPose[1],self.senseParams["sensorPose"][0],self.senseParams["sensorPose"][1])
-        heightmap = self.env.terrain.sensedHeightMap(sensorAbsolutePose,self.senseParams["senseDim"],self.senseParams["senseResolution"])
-        heightmap = torch.tensor(heightmap).float().unsqueeze(0) #Good practice to prepend a null channel dim
+        heightmap = self.env.terrain.sensedFrictionMap(sensorAbsolutePose,self.senseParams["senseDim"],self.senseParams["senseResolution"])
+
+        if self.cmap is None:
+            heightmap = torch.tensor(heightmap).float().unsqueeze(0) #Good practice to prepend a null channel dim
+        else:
+            heightmap = (heightmap - self.env.terrain.terrainParams["frictionOffset"]) / (self.env.terrain.terrainParams["frictionScale"]/1.5)
+            heightmap = np.moveaxis(self.cmap(heightmap), [0, 1, 2], [1, 2, 0])
+            heightmap = torch.tensor(heightmap).float()
+
         heightmap[heightmap.isnan()] = -1. #No nans
-        heightmap[heightmap < self.senseParams["minHeight"]] = self.senseParams["minHeight"]
-        heightmap[heightmap > self.senseParams["maxHeight"]] = self.senseParams["maxHeight"]
+
         return heightmap
 
     def to_rosmsg(self, data):

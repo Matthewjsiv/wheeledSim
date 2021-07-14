@@ -11,6 +11,8 @@ import cv2
 from PIL import Image
 import matplotlib.pyplot as plt
 
+from wheeledSim.util import maybe_mkdir
+
 class terrain(object):
     """
     parent class for random terrain generation
@@ -123,8 +125,6 @@ class Flatland(terrain):
                             "gmm_vars":[1],
                             "gmm_weights":[1]}
     def generate(self,terrainParamsIn={}):
-        from PIL import Image
-
         depth = np.zeros([300,300])
         # depth[200:250,200:250] = 2 #box
         self.gridZ = depth
@@ -146,7 +146,6 @@ class Mountains(terrain):
                             "flatRadius":1,
                             "blendRadius":0.5}
     def generate(self,terrainParamsIn={}):
-        from PIL import Image
         # self.mapSize = [(512-1)*self.meshScale[0],(512-1)*self.meshScale[1]] # dimension of terrain (meters x meters)
         # # define x and y of map grid
         # self.gridX = np.linspace(-self.mapSize[0]/2.0,self.mapSize[0]/2.0,self.mapWidth)
@@ -307,6 +306,7 @@ class randomRockyTerrain(terrain):
                             "frictionOffset":0.2,
                             "flatRadius":1,
                             "blendRadius":0.5}
+        self.n_terrains = 0
     # generate new terrain. (Delete old terrain if exists)
     def generate(self,terrainParamsIn={},copyBlockHeight=None,goal=None):
         self.terrainParams.update(terrainParamsIn)
@@ -364,9 +364,12 @@ class randomRockyTerrain(terrain):
 #        self.frictionMap -= min(-1.0, self.frictionMap.min())
         self.frictionMap -= min(0., self.frictionMap.min()) - self.terrainParams["frictionOffset"]
         im = self.get_friction_map()
-        im.save("friction_map.png")
 
-        self.updateTerrain(texture_fp="friction_map.png")
+        maybe_mkdir("friction_maps", force=True)
+        im.save("friction_maps/friction_map_{}.png".format(self.n_terrains))
+
+        self.updateTerrain(texture_fp="friction_maps/friction_map_{}.png".format(self.n_terrains))
+        self.n_terrains += 1
 
     def get_friction_map(self):
         """
@@ -379,6 +382,34 @@ class randomRockyTerrain(terrain):
         im = Image.fromarray((255*im).astype(np.uint8))
 
         return im
+
+    def sensedFrictionMap(self,sensorPose,mapDim,mapResolution):
+        maxRadius = np.sqrt((mapDim[0]/2.)**2+(mapDim[1]/2.)**2)
+        vecX = self.gridX.reshape(-1)-sensorPose[0][0]
+        vecY = self.gridY.reshape(-1)-sensorPose[0][1]
+        indices = np.all(np.stack((np.abs(vecX)<=(maxRadius+self.meshScale[0]),np.abs(vecY)<=(maxRadius+self.meshScale[1]))),axis=0)
+        vecX = vecX[indices]
+        vecY = vecY[indices]
+        vecZ = self.frictionMap.reshape(-1)[indices]
+        forwardDir = np.array(p.multiplyTransforms([0,0,0],sensorPose[1],[1,0,0],[0,0,0,1])[0][0:2])
+        headingAngle = np.arctan2(forwardDir[1],forwardDir[0])
+        relativeX = vecX*np.cos(headingAngle)+vecY*np.sin(headingAngle)
+        relativeY = -vecX*np.sin(headingAngle)+vecY*np.cos(headingAngle)
+        rMapX = np.linspace(-mapDim[0]/2.,mapDim[0]/2.,mapResolution[0])
+        rMapY = np.linspace(-mapDim[1]/2.,mapDim[1]/2.,mapResolution[1])
+        points = np.stack((relativeX,relativeY)).transpose()
+        rMapX,rMapY = np.meshgrid(rMapX,rMapY)
+        return griddata(points, vecZ, (rMapX,rMapY))
+
+    def copyFrictionMap(self,gridZIn):
+        self.frictionMap=np.copy(gridZIn)
+        im = self.get_friction_map()
+
+        maybe_mkdir("friction_maps", force=True)
+        im.save("friction_maps/friction_map_{}.png".format(self.n_terrains))
+
+        self.updateTerrain(texture_fp="friction_maps/friction_map_{}.png".format(self.n_terrains))
+        self.n_terrains += 1
 
     def randomSteps(self,xPoints,yPoints,numCells,cellPerlinScale,cellHeightScale):
         centersX = np.random.uniform(size=numCells,low=np.min(xPoints),high=np.max(xPoints))

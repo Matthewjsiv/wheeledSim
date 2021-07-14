@@ -367,6 +367,16 @@ class randomRockyTerrain(terrain):
         rMapX,rMapY = np.meshgrid(rMapX,rMapY)
         return griddata(points, vecZ, (rMapX,rMapY))
 
+    def copyFrictionMap(self,gridZIn):
+        self.frictionMap=np.copy(gridZIn)
+        im = self.get_friction_map()
+
+        maybe_mkdir("friction_maps", force=True)
+        im.save("friction_maps/friction_map_{}.png".format(self.n_terrains))
+
+        self.updateTerrain(texture_fp="friction_maps/friction_map_{}.png".format(self.n_terrains))
+        self.n_terrains += 1
+
     def randomSteps(self,xPoints,yPoints,numCells,cellPerlinScale,cellHeightScale):
         centersX = np.random.uniform(size=numCells,low=np.min(xPoints),high=np.max(xPoints))
         centersY = np.random.uniform(size=numCells,low=np.min(yPoints),high=np.max(yPoints))

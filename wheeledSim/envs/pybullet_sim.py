@@ -80,6 +80,7 @@ class WheeledSimEnv:
         # reset environment
         self.env.newTerrain()
         self.env.resetRobot()
+        self.env.robot.params['frictionMap'] = self.env.terrain.frictionMap
         self.nsteps = 0
 
         # get new observation

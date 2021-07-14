@@ -244,7 +244,8 @@ class basicFriction(terrain):
                             "perlinScale":2.5,
                             "perlinHeightScale":0.1,
                             "flatRadius":1,
-                            "blendRadius":0.5}
+                            "blendRadius":0.5,
+                            "setFriction": 1.0}
     # generate new terrain. (Delete old terrain if exists)
     def generate(self,terrainParamsIn={},copyBlockHeight=None,goal=None):
         self.terrainParams.update(terrainParamsIn)
@@ -256,8 +257,10 @@ class basicFriction(terrain):
         # self.frictionMap = self.perlinNoise(self.gridX.reshape(-1),self.gridY.reshape(-1), 0.5*self.terrainParams["perlinScale"], 1.0).reshape(self.gridX.shape)
         # self.frictionMap -= min(-1.0, self.frictionMap.min())
 
-        fm = np.ones([300,300]) - .0
-        # fm[50:100,150:200] = 2
+        fm = np.zeros([300,300]) + self.terrainParams['setFriction']
+        # fm[0:100,50:200] = 2
+        # fm[0:300,0:150] = 3
+        # fm[0:300,160:300] = 4
 
         self.frictionMap = fm
         # self.frictionMap = self.perlinNoise(self.gridX.reshape(-1),self.gridY.reshape(-1), 0.5*self.terrainParams["perlinScale"], 1.0).reshape(self.gridX.shape)
@@ -300,7 +303,7 @@ class randomRockyTerrain(terrain):
                             "perlinScale":2.5,
                             "perlinHeightScale":0.1,
                             "frictionPerlinScale":1.0,
-                            "frictionScale":1.0,
+                            "frictionScale":2.0,
                             "frictionOffset":0.2,
                             "flatRadius":1,
                             "blendRadius":0.5}
@@ -360,7 +363,6 @@ class randomRockyTerrain(terrain):
         self.frictionMap = self.perlinNoise(self.gridX.reshape(-1),self.gridY.reshape(-1), 0.5*self.terrainParams["frictionPerlinScale"], self.terrainParams['frictionScale']/2.0).reshape(self.gridX.shape)
 #        self.frictionMap -= min(-1.0, self.frictionMap.min())
         self.frictionMap -= min(0., self.frictionMap.min()) - self.terrainParams["frictionOffset"]
-
         im = self.get_friction_map()
         im.save("friction_map.png")
 

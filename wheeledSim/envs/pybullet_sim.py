@@ -141,8 +141,9 @@ if __name__ == '__main__':
             axs[1, 1].set_title('Shocks')
 
             axs[0, 0].scatter(obs['lidar'][:, 0], obs['lidar'][:, 1], s=1.,c=obs['lidar'][:,2],cmap=plt.get_cmap('viridis'))
-            axs[0, 1].imshow(obs['heightmap'])
-            axs[1, 0].imshow(obs['front_camera'][:, :, :3])
+            axs[0, 1].imshow(obs['heightmap'][0,:,:])
+            fc = obs['front_camera']
+            axs[1, 0].imshow(np.transpose(fc[:, :, :],(1,2,0)))
             for i, l in zip(range(4), ['fl', 'fr', 'bl', 'br']):
                 axs[1, 1].plot(obs['shock_travel'][:, i], label='{}_travel'.format(l))
             axs[1, 1].legend()

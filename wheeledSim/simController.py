@@ -126,7 +126,7 @@ class simController:
             orien = pose[1]
             forwardDir = p.multiplyTransforms([0,0,0],orien,[1,0,0],[0,0,0,1])[0]
             headingAngle = np.arctan2(forwardDir[1],forwardDir[0])*180/np.pi-90
-            p.resetDebugVisualizerCamera(1.0,headingAngle,-15,pos,physicsClientId=self.physicsClientId)
+            p.resetDebugVisualizerCamera(3.0,headingAngle,-40,pos,physicsClientId=self.physicsClientId)
 
     def controlLoopStep(self,driveCommand):
         # import pdb;pdb.set_trace()

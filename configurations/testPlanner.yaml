@@ -28,8 +28,8 @@
     depthScale: 1
 
   terrainParams:
-    AverageAreaPerCell: 1.0
-    cellPerlinScale: 0.0
+    AverageAreaPerCell: 10.0
+    cellPerlinScale: 0.5
     cellHeightScale: 0.0
     smoothing: 0.7
     perlinScale: 2.5
@@ -42,3 +42,11 @@
 
   explorationParams:
       explorationType: "boundedExplorationNoise"
+
+  sensors:
+      LocalHeightmapSensor:
+          type: LocalHeightmapSensor
+          topic: heightmap
+          params:
+              senseResolution: [100, 100]
+              senseDim: [10.0, 10.0]

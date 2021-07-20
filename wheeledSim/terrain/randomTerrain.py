@@ -342,7 +342,11 @@ class randomRockyTerrain(terrain):
         Do the conversions to get a color image from fricmap
         """
         cm = plt.get_cmap('RdYlGn')
-        im = np.fliplr(self.frictionMap - self.terrainParams["frictionOffset"]) / (self.terrainParams['frictionScale']/1.5)
+        if self.terrainParams['frictionScale'] > 0.:
+            im = np.fliplr(self.frictionMap - self.terrainParams["frictionOffset"]) / (self.terrainParams['frictionScale']/1.5)
+        else:
+            im = np.fliplr(self.frictionMap)
+
         im = cm(im)
 
         im = Image.fromarray((255*im).astype(np.uint8))

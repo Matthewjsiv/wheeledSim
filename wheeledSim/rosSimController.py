@@ -1,24 +1,48 @@
 import rospy
-import pybullet as p
+import pybullet
 import numpy as np
 import torch
+import yaml
 
 from ackermann_msgs.msg import AckermannDriveStamped
 from nav_msgs.msg import Odometry
 
-from wheeledSim.randomTerrain import *
+from wheeledRobots.clifford.cliffordRobot import Clifford
+from wheeledSim.terrain.randomTerrain import *
 from wheeledSim.randomExplorationPolicy import *
 from wheeledSim.simController import simController
+from wheeledSim.sensors.sensor_map import sensor_str_to_obj
 
 class rosSimController(simController):
     """
     Same as simcontroller, but is continuously running and is integrated to use rostopics.
     """
-    def __init__(self,robot,physicsClientId=0,simulationParamsIn={},senseParamsIn={},
-                terrainMapParamsIn={},terrainParamsIn={},explorationParamsIn={},sensors=[]):
-        super(rosSimController, self).__init__(robot, physicsClientId, simulationParamsIn, senseParamsIn, terrainMapParamsIn, terrainParamsIn, explorationParamsIn, sensors)
-        self.curr_drive = np.array([0., 0.])
-        self.buf = {k:[torch.zeros(*k.N)] * self.stepsPerControlLoop for k in self.sensors if k.is_time_series}
+    def __init__(self, config_file, T=-1, render=True):
+
+        # open file with configuration parameters
+        stream = open(config_file, 'r')
+        config = yaml.load(stream, Loader=yaml.FullLoader)
+
+        self.client = pybullet.connect(pybullet.GUI, options=config.get('backgroundColor', "")) if render else pybullet.connect(pybullet.DIRECT)
+        self.robot = Clifford(params=config['cliffordParams'], t_params = config['terrainMapParams'], physicsClientId=self.client)
+
+        # load simulation environment
+        super(rosSimController, self).__init__(self.robot, self.client, config['simulationParams'], config['senseParams'],
+                                 config['terrainMapParams'], config['terrainParams'], config['explorationParams'])
+
+        # initialize all sensors from config file
+        sensors = []
+        self.sense_dict = config.get('sensors', {})
+
+        for sensor in self.sense_dict.values():
+            assert sensor['type'] in sensor_str_to_obj.keys(), "{} not a valid sensor type. Valid sensor types are {}".format(sensor['type']. sensor_str_to_obj.keys())
+
+            sensor_cls = sensor_str_to_obj[sensor['type']]
+            sensor = sensor_cls(self, senseParamsIn=sensor.get('params', {}), topic=sensor.get('topic', None))
+            sensors.append(sensor)
+
+        self.set_sensors(sensors)
+        self.curr_drive = np.zeros(2)
 
     def set_sensors(self, sensors):
         self.sensors = sensors
@@ -33,7 +57,7 @@ class rosSimController(simController):
         state, sensing, action = self.state
 
         odom_msg = self.state_to_odom(state)
-        sensing_msgs = {k:k.to_rosmsg(v) for k,v in sensing.items()}
+        sensing_msgs = {k.topic:k.to_rosmsg(v) for k,v in sensing.items()}
         return odom_msg, sensing_msgs
 
     def state_to_odom(self, state):
@@ -70,10 +94,7 @@ class rosSimController(simController):
                 self.lastAbsoluteState = list(self.lastPose[0])+list(self.lastPose[1])+self.lastVel[:] + self.lastJointState[:]
             else:
                 self.lastAbsoluteState = list(self.lastPose[0])+list(self.lastPose[1])+self.lastVel[:]
-        #simulate sensing (generate height map or lidar point cloud)
-        sensingData = {k: torch.stack(self.buf[k], dim=0) if k.is_time_series else k.measure() for k in self.sensors}
-        # store state-action for motion prediction
-        stateActionData = [self.lastAbsoluteState,sensingData,self.curr_drive] #(absolute robot state, sensing data, action)
+
         # command robot throttle & steering and simulate
         self.robot.drive(throttle)
         self.robot.steer(steering)
@@ -107,49 +128,24 @@ class rosSimController(simController):
         self.lastStateRecordFlag = True
         newStateData = [self.lastAbsoluteState]
         """
+        sense_data = {k:torch.stack(self.buf[k], dim=0) if k.is_time_series else k.measure() for k in self.sensors}
 
-        self.state = stateActionData
+        self.state = [self.lastAbsoluteState, sense_data, self.curr_drive]
 
 if __name__ == '__main__':
     from grid_map_msgs.msg import GridMap
 
     from wheeledRobots.clifford.cliffordRobot import Clifford
 
-    from wheeledSim.shock_travel_sensor import ShockTravelSensor
-    from wheeledSim.local_heightmap_sensor import LocalHeightmapSensor
-    from wheeledSim.front_camera_sensor import FrontCameraSensor
-    from wheeledSim.lidar_sensor import LidarSensor
+    from wheeledSim.sensors.shock_travel_sensor import ShockTravelSensor
+    from wheeledSim.sensors.local_heightmap_sensor import LocalHeightmapSensor
+    from wheeledSim.sensors.front_camera_sensor import FrontCameraSensor
+    from wheeledSim.sensors.lidar_sensor import LidarSensor
 
-    physicsClient = p.connect(p.GUI)#or p.DIRECT for non-graphical version
+    env = rosSimController('../configurations/sysidEnvParams.yaml', render=True)
 
-    """initialize clifford robot"""
-    cliffordParams={"maxThrottle":20, # dynamical parameters of clifford robot
-                    "maxSteerAngle":0.5,
-                    "susOffset":-0.00,
-                    "susLowerLimit":-0.01,
-                    "susUpperLimit":0.00,
-                    "susDamping":10,
-                    "susSpring":500,
-                    "traction":1.25,
-                    "massScale":1.0}
-    terrainMapParams = {"mapWidth":200, # width of matrix
-                    "mapHeight":200, # height of matrix
-                    "widthScale":0.1, # each pixel corresponds to this distance
-                    "heightScale":0.1,
-                    "depthScale":1.0
-                    }
-    terrainParams = {"AverageAreaPerCell":1.0,
-                    "cellPerlinScale":5,
-                    "cellHeightScale":0.0, # parameters for generating terrain
-                    "smoothing":0.7,
-                    "perlinScale":2.5,
-                    "perlinHeightScale":0.0,
-                    }
-
-    robot = Clifford(params=cliffordParams,physicsClientId=physicsClient)
-
-    env = rosSimController(robot, terrainParamsIn=terrainParams, terrainMapParamsIn=terrainMapParams)
-    env.set_sensors([LocalHeightmapSensor(env), ShockTravelSensor(env),FrontCameraSensor(env),LidarSensor(env)])
+#    env = rosSimController(robot, terrainParamsIn=terrainParams, terrainMapParamsIn=terrainMapParams)
+#    env.set_sensors([LocalHeightmapSensor(env), ShockTravelSensor(env),FrontCameraSensor(env),LidarSensor(env)])
 
     rospy.init_node("pybullet_simulator")
     rate = rospy.Rate(10)
@@ -157,11 +153,14 @@ if __name__ == '__main__':
     cmd_sub = rospy.Subscriber("/cmd", AckermannDriveStamped, env.handle_cmd, queue_size=1)
     odom_pub = rospy.Publisher("/odom", Odometry, queue_size=1)
     map_pub = rospy.Publisher("/local_map", GridMap, queue_size=1)
+    cam_pub = rospy.Publisher("/front_camera", GridMap, queue_size=1)
 
     while not rospy.is_shutdown():
         env.step()
         state, sensing = env.get_sensing()
-        heightmap = sensing[env.sensors[0]]
+        heightmap = sensing['heightmap']
+        img = sensing['front_camera']
         odom_pub.publish(state)
         map_pub.publish(heightmap)
+        cam_pub.publish(img)
         rate.sleep()

@@ -34,6 +34,7 @@ class HeightMap:
         self.width = 0.5 * self.data.shape[1] * resolution
         self.height = 0.5 * self.data.shape[0] * resolution
         self.precompute_normals()
+        self.precompute_cost()
 
     def precompute_normals(self):
         """
@@ -79,6 +80,21 @@ class HeightMap:
         
         return self.data[xq, yq]
 
+    def get_cost(self, idxs):
+        """
+        Get the (interpolated) cost at (x, y)
+        """
+        xp, yp = idxs
+
+        if isinstance(xp, torch.Tensor):
+            xq = (xp / self.resolution).long() + self.ox
+            yq = (yp / self.resolution).long() + self.oy
+        else:
+            xq = int(xp / self.resolution) + self.ox
+            yq = int(yp / self.resolution) + self.oy
+        
+        return self.cost[xq, yq]
+
     def get_normal(self, idxs):
         """
         Get the (interpolated) normal at (x, y)
@@ -94,12 +110,12 @@ class HeightMap:
         
         return self.normals[xq, yq]
 
-    def get_cost(self, k_smooth=1.0, k_curvature=1.0, k_slope=1.0):
+    def precompute_cost(self, k_smooth=1.0, k_curvature=1.0, k_slope=1.0):
         """
         Get a cell-wise cost and clamp it to 0, 1.
         """
         cost = k_smooth * self.get_smoothness() + k_curvature * self.get_curvature() + k_slope * self.get_slope()
-        return cost.clamp(0, 1)
+        self.cost = cost.clamp(0, 1)
 
     def get_smoothness(self, kernel_size=3):
         """

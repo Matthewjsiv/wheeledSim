@@ -57,12 +57,16 @@ class simController:
                 self.terrain = randomRockyTerrain(terrainMapParamsIn,physicsClientId=self.physicsClientId)
             elif self.terrainParamsIn["terrainType"] == "randomSloped":
                 self.terrain = randomSloped(terrainMapParamsIn,physicsClientId=self.physicsClientId)
+            elif self.terrainParamsIn["terrainType"] == "fixSloped":
+                self.terrain = fixSloped(terrainMapParamsIn,physicsClientId=self.physicsClientId)
             elif self.terrainParamsIn["terrainType"] == "mountains":
                 self.terrain = Mountains(terrainMapParamsIn,physicsClientId=self.physicsClientId)
             elif self.terrainParamsIn["terrainType"] == "flatLand":
                 self.terrain = Flatland(terrainMapParamsIn,physicsClientId=self.physicsClientId)
             elif self.terrainParamsIn["terrainType"] == "basicFriction":
                 self.terrain = basicFriction(terrainMapParamsIn,physicsClientId=self.physicsClientId)
+            elif self.terrainParamsIn["terrainType"] == "obstacles":
+                    self.terrain = obstacleCourse(terrainMapParamsIn,physicsClientId=self.physicsClientId)
             else:
                 self.terrain = self.terrainParamsIn["terrainType"](terrainMapParamsIn,physicsClientId=self.physicsClientId)
             self.newTerrain()
@@ -84,7 +88,7 @@ class simController:
         #self.randDrive = np.zeros(2)
 
         # set up robot
-        self.camFollowBot = True
+        self.camFollowBot = False
         self.robot = robot
         self.lastStateRecordFlag = False # Flag to tell if last state of robot has been recorded or not
         if self.terrainParamsIn["terrainType"] == "randomRockyTerrain" or self.terrainParamsIn["terrainType"] == "basicFriction":
@@ -105,7 +109,7 @@ class simController:
         if len(pos)>2:
             safeFallHeight = pos[2]
         else:
-            safeFallHeight = self.terrain.maxLocalHeight(pos,1)+0.3
+            safeFallHeight = self.terrain.maxLocalHeight(pos,1)+1.3
         self.robot.reset([[pos[0],pos[1],safeFallHeight],orien])
         if doFall:
             fallTime=0.5

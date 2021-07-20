@@ -7,7 +7,7 @@ import argparse
 import matplotlib.pyplot as plt
 import pybullet as p
 
-from wheeledSim.pybullet_sim import WheeledSimEnv
+from wheeledSim.envs.pybullet_sim import WheeledSimEnv
 
 def generate_step_functions(T=50, throttle_n=3, steer_n=3):
     """
@@ -55,7 +55,7 @@ if __name__ == '__main__':
 
     """load environment"""
     config_file = "../configurations/sysidEnvParams.yaml"
-    env = WheeledSimEnv(config_file, T=50, render=False)
+    env = WheeledSimEnv(config_file, T=50, render=True)
 
     step_funcs = generate_step_functions(args.T, args.throttle_n, args.steer_n)
 
@@ -68,12 +68,14 @@ if __name__ == '__main__':
     """collect step responses"""
     for e, acts in enumerate(step_funcs):
         print("Step func {}/{}".format(e + 1, len(step_funcs)))
-        states = [torch.tensor(env.reset())]
+        # print(env.reset())
+        states = [torch.tensor(env.reset()['state'])]
         sysid_labels = []
-        
+
         for act in acts:
             no, r, t, i = env.step(act)
             labels = get_labels(env.robot)
+            print(no['state'])
             states.append(torch.tensor(no['state']))
             sysid_labels.append(labels)
 
@@ -83,7 +85,7 @@ if __name__ == '__main__':
         data_buf['action'].append(acts)
         data_buf['sysid_labels'].append(sysid_labels)
 
-    import pdb;pdb.set_trace()
+    # import pdb;pdb.set_trace()
     data_buf['observation'] = torch.stack(data_buf['observation'], dim=0).float()
     data_buf['action'] = torch.stack(data_buf['action'], dim=0).float()
     data_buf['sysid_labels'] = torch.stack(data_buf['sysid_labels'], dim=0).float()

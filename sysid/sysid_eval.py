@@ -1,6 +1,7 @@
 import torch
 import matplotlib.pyplot as plt
 import argparse
+import numpy as np
 
 from torch import optim
 
@@ -58,6 +59,29 @@ class ARXTransferFunction:
             return sum([self.Kx[i, -1] * self.xbuf[-1].pow(i+1) + self.Ku[i, -1] * self.ubuf[-1] for i in range(self.order)])
         else:
             return sum([(self.Kx[i, :] * self.xbuf.pow(i+1)).sum(dim=-1) + (self.Ku[i, :] * self.ubuf.pow(i+1)).sum(dim=-1) for i in range(self.order)])
+
+    def future(self, state, cmd, nsteps = 5):
+        xbuf = torch.cat([state.unsqueeze(0), self.xbuf[:-1]], dim=0)
+        ubuf = torch.cat([cmd.unsqueeze(0), self.ubuf[:-1]], dim=0)
+
+        nstate = np.asarray([])
+
+        if self.only_last_state:
+            nstate = np.hstack([nstate, sum([self.Kx[i, -1] * xbuf[-1].pow(i+1) + self.Ku[i, -1] * ubuf[-1] for i in range(self.order)])])
+        else:
+            nstate = np.hstack([nstate, sum([(self.Kx[i, :] * xbuf.pow(i+1)).sum(dim=-1) + (self.Ku[i, :] * ubuf.pow(i+1)).sum(dim=-1) for i in range(self.order)])])
+
+        for _ in range(nsteps - 1):
+            xbuf = torch.cat([torch.tensor(nstate[-1]).unsqueeze(0), xbuf[:-1]], dim=0)
+            ubuf = torch.cat([cmd.unsqueeze(0), ubuf[:-1]], dim=0)
+
+            if self.only_last_state:
+                nstate = np.hstack([nstate,sum([self.Kx[i, -1] * xbuf[-1].pow(i+1) + self.Ku[i, -1] * ubuf[-1] for i in range(self.order)])])
+            else:
+                nstate = np.hstack([nstate, sum([(self.Kx[i, :] * xbuf.pow(i+1)).sum(dim=-1) + (self.Ku[i, :] * ubuf.pow(i+1)).sum(dim=-1) for i in range(self.order)])])
+
+        return nstate
+
 
     def __repr__(self):
         return "Kx: {}\nKu: {}\nxbuf: {}\nubuf: {}".format(self.Kx, self.Ku, self.xbuf, self.ubuf)
@@ -157,42 +181,42 @@ if __name__ == '__main__':
         print("THROTTLE TF:\n", throttle_tf)
         print("STEER TF:\n", steer_tf)
 
-        torch.save(throttle_tf, 'throttle_tf.pt')
-        torch.save(steer_tf, 'steer_tf.pt')
+        torch.save(throttle_tf,args.data_fp +  '_throttle.pt')
+        torch.save(steer_tf, args.data_fp + '_steer.pt')
     else:
         throttle_tf = torch.load(args.throttle_tf)
         steer_tf = torch.load(args.steer_tf)
 
-    #Viz
-    for _ in range(5):
-        tidx = torch.randint(len(trajdata['action']), (1,)).squeeze()
-        vel = trajdata['sysid_labels'][tidx][:, 0]
-        delta = trajdata['sysid_labels'][tidx][:, 1]
-        throttle = trajdata['action'][tidx][:, 0]
-        steer = trajdata['action'][tidx][:, 1]
-
-        vpred = [vel[0]]
-        dpred = [delta[0]]
-        throttle_tf.reset()
-        steer_tf.reset()
-
-        for v, d, t, s in zip(vel, delta, throttle, steer):
-            vpred.append(throttle_tf.forward(vpred[-1], t))
-            dpred.append(steer_tf.forward(dpred[-1], s))
-
-        vpred = torch.tensor(vpred[1:])
-        dpred = torch.tensor(dpred[1:])
-
-        throttle_error = (vpred - vel).pow(2).mean().sqrt()
-        steer_error = (dpred - steer).pow(2).mean().sqrt()
-
-        print("_" * 30)
-        print("Vel error = {:.4f}".format(throttle_error))
-        print("Steer error = {:.4f}".format(steer_error))
-
-        plt.plot(vel, label='vgt')
-        plt.plot(delta, label='dgt')
-        plt.plot(vpred, label='vpred')
-        plt.plot(dpred, label='dpred')
-        plt.legend()
-        plt.show()
+    # #Viz
+    # for _ in range(5):
+    #     tidx = torch.randint(len(trajdata['action']), (1,)).squeeze()
+    #     vel = trajdata['sysid_labels'][tidx][:, 0]
+    #     delta = trajdata['sysid_labels'][tidx][:, 1]
+    #     throttle = trajdata['action'][tidx][:, 0]
+    #     steer = trajdata['action'][tidx][:, 1]
+    #
+    #     vpred = [vel[0]]
+    #     dpred = [delta[0]]
+    #     throttle_tf.reset()
+    #     steer_tf.reset()
+    #
+    #     for v, d, t, s in zip(vel, delta, throttle, steer):
+    #         vpred.append(throttle_tf.forward(vpred[-1], t))
+    #         dpred.append(steer_tf.forward(dpred[-1], s))
+    #
+    #     vpred = torch.tensor(vpred[1:])
+    #     dpred = torch.tensor(dpred[1:])
+    #
+    #     throttle_error = (vpred - vel).pow(2).mean().sqrt()
+    #     steer_error = (dpred - steer).pow(2).mean().sqrt()
+    #
+    #     print("_" * 30)
+    #     print("Vel error = {:.4f}".format(throttle_error))
+    #     print("Steer error = {:.4f}".format(steer_error))
+    #
+    #     plt.plot(vel, label='vgt')
+    #     plt.plot(delta, label='dgt')
+    #     plt.plot(vpred, label='vpred')
+    #     plt.plot(dpred, label='dpred')
+    #     plt.legend()
+    #     plt.show()

@@ -4,8 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pybullet
 import time
+import yaml
 
 from ackermann_msgs.msg import AckermannDriveStamped
+from common_msgs.msg import AckermannDriveArray
 from nav_msgs.msg import Odometry
 from grid_map_msgs.msg import GridMap
 from geometry_msgs.msg import PoseStamped
@@ -16,6 +18,18 @@ from wheeledSim.models.kinematic_bicycle_model import KBMKinematics
 from wheeledSim.models.transfer_functions import ARXTransferFunction
 from wheeledSim.heightmap import HeightMap
 from wheeledSim.util import yaw_to_quat, quat_to_yaw
+
+from kbm_planner import KBMMPCPlanner, KBMAstarPlanner
+
+def get_cmds(x):
+    """
+    Get cmds (as an array of Ackermann motions) from a torch tensor of throttle, steer
+    """
+    msg = AckermannDriveArray()
+    drives = [torch_to_cmd(y).drive for y in x]
+    msg.drives = drives
+    msg.header.stamp = rospy.Time.now()
+    return msg
 
 def torch_to_cmd(x):
     cmd = AckermannDriveStamped()
@@ -55,9 +69,12 @@ def heightmap_to_numpy(hmap_msg):
     hmap = data.reshape(-1, rowwidth)
     return hmap
 
-def get_primitives(throttle_n, steer_n, T=10):
+def get_primitives(throttle_n, steer_n, T=10, reverse=False):
     seqs = torch.zeros(throttle_n, steer_n, T, 2)
-    throttles = torch.linspace(0., 1., throttle_n + 1)[1:]
+    if reverse:
+        throttles = torch.linspace(-1, 1, throttle_n)
+    else:
+        throttles = torch.linspace(0., 1., throttle_n + 1)[1:]
     steers = torch.linspace(-1., 1., steer_n)
 
     for ti, t in enumerate(throttles):
@@ -69,61 +86,44 @@ def get_primitives(throttle_n, steer_n, T=10):
     return seqs
 
 if __name__ == '__main__':
-    from kbm_planner import KBMMPCPlanner
 
-    env = rosSimController('../../configurations/testPlanner.yaml', render=True)
+    params = yaml.safe_load(open('../../configurations/testPlanner.yaml', 'r'))
 
     #Get map resolution params
-    hmap_params = next(x.senseParams for x in env.sensors if x.topic == 'heightmap')
+    hmap_params = next(x['params'] for x in params['sensors'].values() if x['topic'] == 'heightmap')
+    controller_freq = 10
 
     kbm = KBMKinematics({'L':0.9}, reverse_steer=True)
     throttle_tf = torch.load('f1p0_throttle.pt')
     steer_tf = torch.load('f1p0_steer.pt')
     dynamic_kbm = KBMDynamics(kbm, throttle_tf, steer_tf)
 
-    primitives = get_primitives(throttle_n=1, steer_n=7, T=15)
+#    primitives = get_primitives(throttle_n=2, steer_n=5, T=20, reverse=False)
+#    planner = KBMMPCPlanner(dynamic_kbm, primitives, hmap_params, dt=1./controller_freq, relative_goal=True)
 
-    planner = KBMMPCPlanner(dynamic_kbm, primitives, hmap_params)
+    primitives = get_primitives(throttle_n=2, steer_n=5, T=5, reverse=False)
+    planner = KBMAstarPlanner(dynamic_kbm, primitives, hmap_params, dt=1./controller_freq, max_itrs=10, relative_goal=True)
 
-#    planner.position = torch.tensor([0., 0., np.pi/2])
-#    planner.goal = torch.tensor([5.0, 0.0])
-#    planner.get_relative_goal()
-
-    freq = 10
-    rospy.init_node("pybullet_simulator")
+    freq = 3
+    rospy.init_node("mpc_planner")
     rate = rospy.Rate(freq)
 
-    #Simulator
-    cmd_sub = rospy.Subscriber("/cmd", AckermannDriveStamped, env.handle_cmd, queue_size=1)
-    odom_pub = rospy.Publisher("/odom", Odometry, queue_size=1)
-    heightmap_pub = rospy.Publisher("/heightmap", GridMap, queue_size=1)
-
     #Planner
-    heightmap_sub = rospy.Subscriber("/heightmap", GridMap, planner.handle_heightmap)
-    odom_sub = rospy.Subscriber("/odom", Odometry, planner.handle_odom)
+    heightmap_sub = rospy.Subscriber("/local_height_map", GridMap, planner.handle_heightmap)
+#    heightmap_sub = rospy.Subscriber("/heightmap", GridMap, planner.handle_heightmap)
+    odom_sub = rospy.Subscriber("/tartanvo_odom", Odometry, planner.handle_odom)
     goal_sub = rospy.Subscriber("/goal", PoseStamped, planner.handle_goal)
-    cmd_pub = rospy.Publisher("/cmd", AckermannDriveStamped, queue_size=1)
-
-    T = 50
-    cmd_buf = torch.zeros(T, 2)
-    pred_state_buf = torch.zeros(T, 2)
-    gt_state_buf = torch.zeros(T, 2)
-    pred_traj_buf = torch.zeros(T, 3)
-    gt_traj_buf = torch.zeros(T, 2)
-    time_buf = []
+    plan_pub = rospy.Publisher("/plan", AckermannDriveArray, queue_size=1)
 
     fig, axs = planner.render()
     plt.show(block=False)
 
-    while not rospy.is_shutdown():
-        env.step()
-        state, sensing = env.get_sensing()
-        ctrl = torch.tensor(env.curr_drive).float()
-        pred = dynamic_kbm.forward(odom_to_state(state), ctrl, dt=1./freq)
+    T = 50
+    time_buf = []
 
-        odom_pub.publish(state)
-        heightmap_pub.publish(sensing['heightmap'])
-        cmd_pub.publish(torch_to_cmd(planner.best_seq[0]))
+    while not rospy.is_shutdown():
+        msg = get_cmds(planner.best_seq)
+        plan_pub.publish(msg)
 
         for ax in axs:
             ax.cla()
@@ -135,10 +135,10 @@ if __name__ == '__main__':
         if len(time_buf) > T:
             time_buf = time_buf[1:]
 
-#        torch.set_printoptions(sci_mode=False, precision=4)
-#        print('Current Position = {}'.format(planner.position))
-#        print('Current Goal =     {}'.format(planner.goal))
-#        print('Relative Goal =    {}'.format(planner.relative_goal))
+        torch.set_printoptions(sci_mode=False, precision=4)
+        print('Current Position = {}'.format(planner.position))
+        print('Current Goal =     {}'.format(planner.goal))
+        print('Relative Goal =    {}'.format(planner.relative_goal))
 
         print('Plan time: {:.4f}s'.format(sum(time_buf)/len(time_buf)))
         print('Act = {}'.format(planner.best_seq[0]))

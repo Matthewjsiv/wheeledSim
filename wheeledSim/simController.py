@@ -88,7 +88,7 @@ class simController:
         #self.randDrive = np.zeros(2)
 
         # set up robot
-        self.camFollowBot = False
+        self.camFollowBot = True
         self.robot = robot
         self.lastStateRecordFlag = False # Flag to tell if last state of robot has been recorded or not
         if self.terrainParamsIn["terrainType"] == "randomRockyTerrain" or self.terrainParamsIn["terrainType"] == "basicFriction":

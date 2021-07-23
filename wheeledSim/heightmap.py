@@ -17,7 +17,7 @@ class HeightMap:
     Map class with a few additional features to make force calculations easier.
     Namely, allow for querying of normal vectors at various points.
     """
-    def __init__(self, data, resolution):
+    def __init__(self, data, resolution, k_smooth=1.0, k_slope=0.5, k_curvature=0.05):
         """
         Args:
             data: The data to take as the map. Assume that the map is centered at (0, 0).
@@ -34,7 +34,7 @@ class HeightMap:
         self.width = 0.5 * self.data.shape[1] * resolution
         self.height = 0.5 * self.data.shape[0] * resolution
         self.precompute_normals()
-        self.precompute_cost()
+        self.precompute_cost(k_smooth, k_slope, k_curvature)
 
     def precompute_normals(self):
         """
@@ -69,7 +69,7 @@ class HeightMap:
         """
         Get the (interpolated) height at (x, y)
         """
-        xp, yp = idxs
+        yp, xp = idxs
 
         if isinstance(xp, torch.Tensor):
             xq = (xp / self.resolution).long() + self.ox
@@ -84,7 +84,7 @@ class HeightMap:
         """
         Get the (interpolated) cost at (x, y)
         """
-        xp, yp = idxs
+        yp, xp = idxs
 
         if isinstance(xp, torch.Tensor):
             xq = (xp / self.resolution).long() + self.ox
@@ -92,14 +92,21 @@ class HeightMap:
         else:
             xq = int(xp / self.resolution) + self.ox
             yq = int(yp / self.resolution) + self.oy
-        
-        return self.cost[xq, yq]
+
+        mask = (xq < 0) | (xq >= self.data.shape[1]) | (yq < 0) | (yq >= self.data.shape[0])
+        xq2 = xq.clamp(0, self.data.shape[1]-1)
+        yq2 = yq.clamp(0, self.data.shape[0]-1)
+
+        cost = self.cost[xq2, yq2]
+        cost[mask] = float('inf')
+
+        return cost
 
     def get_normal(self, idxs):
         """
         Get the (interpolated) normal at (x, y)
         """
-        xp, yp = idxs
+        yp, xp = idxs
 
         if isinstance(xp, torch.Tensor):
             xq = (xp / self.resolution).long() + self.ox

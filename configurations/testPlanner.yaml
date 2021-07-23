@@ -28,12 +28,12 @@
     depthScale: 1
 
   terrainParams:
-    AverageAreaPerCell: 10.0
+    AverageAreaPerCell: 1.0
     cellPerlinScale: 0.5
-    cellHeightScale: 0.0
+    cellHeightScale: 0.4
     smoothing: 0.7
-    perlinScale: 2.5
-    perlinHeightScale: 0.0
+    perlinScale: 1.0
+    perlinHeightScale: 0.1
     frictionScale: 0.0
     frictionOffset: 1.0
 
@@ -50,3 +50,4 @@
           params:
               senseResolution: [100, 100]
               senseDim: [10.0, 10.0]
+              sensorPose: [[5., 0, 0], [0, 0, 0, 1]]

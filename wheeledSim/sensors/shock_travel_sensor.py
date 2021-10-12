@@ -2,6 +2,7 @@ import torch
 import pybullet as p
 
 from geometry_msgs.msg import Point
+from common_msgs.msg import ShockTravel, ShockTravelArray
 
 class ShockTravelSensor:
     """
@@ -32,5 +33,17 @@ class ShockTravelSensor:
         return torch.tensor([fl_travel, fr_travel, bl_travel, br_travel]).float()
 
     def to_rosmsg(self, data):
-        #TODO: implement
-        return Point()
+        if len(data.shape) == 1:
+            msg = ShockTravel()
+            msg.front_left = data[0].item()
+            msg.front_right = data[1].item()
+            msg.rear_left = data[2].item()
+            msg.rear_right = data[3].item()
+            return msg
+        elif len(data.shape) == 2:
+            msg = ShockTravelArray()
+            msg.shock_travels = [self.to_rosmsg(x) for x in data]
+            return msg
+        else:
+            print('Got more than 2 dims to parse for Shock Travel')
+            return Imu()

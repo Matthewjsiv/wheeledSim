@@ -29,6 +29,8 @@ class WheeledSimEnv:
         # initialize all sensors from config file
         sensors = []
         self.sense_dict = config.get('sensors', {})
+        if self.sense_dict is None:
+            self.sense_dict = {}
 
         for sensor in self.sense_dict.values():
             assert sensor['type'] in sensor_str_to_obj.keys(), "{} not a valid sensor type. Valid sensor types are {}".format(sensor['type']. sensor_str_to_obj.keys())
@@ -45,7 +47,11 @@ class WheeledSimEnv:
     @property
     def observation_space(self):
         # observation takes form (x,y,z) position, (x,y,z,w) quaternion orientation, velocity, joint state
-        state_space = gym.spaces.Box(low=np.ones(13) * -float('inf'), high=np.ones(13) * float('inf'))
+        state_dim = 7
+        if self.env.senseParams['recordVelocity']:
+            state_dim += 6
+
+        state_space = gym.spaces.Box(low=np.ones(state_dim) * -float('inf'), high=np.ones(state_dim) * float('inf'))
 
         # Add sensor output to observation space dict
         sensor_space = {'state': state_space}

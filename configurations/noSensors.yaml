@@ -1,6 +1,6 @@
 ---
   cliffordParams:
-    maxThrottle: 20 # dynamical parameters of clifford robot
+    maxThrottle: 1000 # dynamical parameters of clifford robot
     maxSteerAngle: 0.5
     susOffset: -0.00
     susLowerLimit: -0.01
@@ -8,12 +8,12 @@
     susDamping: 10
     susSpring: 500
     traction: 1.25
-    massScale: 1.0
+    massScale: 10.0
 
   simulationParams:
     timeStep: 0.002
     stepsPerControlLoop: 50
-    numSolverIterations: 300
+    numSolverIterations: 50
     gravity: -10
     contactBreakingThreshold: 0.0001
     contactSlop: 0.0001
@@ -21,10 +21,10 @@
     maxStopMoveLength: 250
 
   terrainMapParams:
-    mapWidth: 300  # width of matrix
-    mapHeight: 300  # height of matrix
-    widthScale: 0.1  # each pixel corresponds to this distance
-    heightScale: 0.1
+    mapWidth: 500  # width of matrix
+    mapHeight: 50  # height of matrix
+    widthScale: 0.5  # each pixel corresponds to this distance
+    heightScale: 0.5
     depthScale: 1
 
   terrainParams:
@@ -33,7 +33,7 @@
     cellHeightScale: 0.0
     smoothing: 0.7
     perlinScale: 0.9
-    perlinHeightScale: 0.0
+    perlinHeightScale: 0.5
     frictionScale: 0.0
 
   senseParams:
@@ -43,17 +43,3 @@
       explorationType: "boundedExplorationNoise"
 
   sensors:
-      FrontCamera:
-          type: FrontCameraSensor
-          topic: front_camera
-          params:
-              FOV: 45.0
-              aspect: 1.0
-              senseResolution: [128, 128]
-
-      LocalHeightmapSensor:
-          type: LocalHeightmapSensor
-          topic: heightmap
-          params:
-              senseResolution: [128, 128]
-              senseDim: [5.0, 5.0]

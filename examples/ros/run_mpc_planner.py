@@ -94,23 +94,27 @@ if __name__ == '__main__':
     controller_freq = 10
 
     kbm = KBMKinematics({'L':0.9}, reverse_steer=True)
-    throttle_tf = torch.load('f1p0_throttle.pt')
-    steer_tf = torch.load('f1p0_steer.pt')
+    throttle_tf = torch.load('mushr_throttle_identity.pt')
+    steer_tf = torch.load('mushr_steer_identity.pt')
+
+#    throttle_tf = torch.load('tfs/s0.3f1.35_throttle.pt')
+#    steer_tf = torch.load('tfs/s0.3f1.35_steer.pt')
+
     dynamic_kbm = KBMDynamics(kbm, throttle_tf, steer_tf)
 
-#    primitives = get_primitives(throttle_n=2, steer_n=5, T=20, reverse=False)
-#    planner = KBMMPCPlanner(dynamic_kbm, primitives, hmap_params, dt=1./controller_freq, relative_goal=True)
+    primitives = get_primitives(throttle_n=1, steer_n=7, T=20, reverse=False)
+    planner = KBMMPCPlanner(dynamic_kbm, primitives, hmap_params, dt=1./controller_freq, relative_goal=False)
 
-    primitives = get_primitives(throttle_n=2, steer_n=5, T=5, reverse=False)
-    planner = KBMAstarPlanner(dynamic_kbm, primitives, hmap_params, dt=1./controller_freq, max_itrs=10, relative_goal=True)
+#    primitives = get_primitives(throttle_n=2, steer_n=5, T=5, reverse=False)
+#    planner = KBMAstarPlanner(dynamic_kbm, primitives, hmap_params, dt=1./controller_freq, max_itrs=10, relative_goal=True)
 
     freq = 3
     rospy.init_node("mpc_planner")
     rate = rospy.Rate(freq)
 
     #Planner
-    heightmap_sub = rospy.Subscriber("/local_height_map", GridMap, planner.handle_heightmap)
-#    heightmap_sub = rospy.Subscriber("/heightmap", GridMap, planner.handle_heightmap)
+#    heightmap_sub = rospy.Subscriber("/local_height_map", GridMap, planner.handle_heightmap)
+    heightmap_sub = rospy.Subscriber("/heightmap", GridMap, planner.handle_heightmap)
     odom_sub = rospy.Subscriber("/tartanvo_odom", Odometry, planner.handle_odom)
     goal_sub = rospy.Subscriber("/goal", PoseStamped, planner.handle_goal)
     plan_pub = rospy.Publisher("/plan", AckermannDriveArray, queue_size=1)

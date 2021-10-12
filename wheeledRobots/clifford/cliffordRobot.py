@@ -167,7 +167,7 @@ class Clifford:
         newtract = fm[y,x]
         if newtract != self.params["traction"]:
             self.changeTraction(newtract)
-            print(self.params["traction"])
+#            print(self.params["traction"])
 
     def updateTraction4Tire(self):
         #order should allegedly be
@@ -182,7 +182,7 @@ class Clifford:
             newtract = fm[y,x]
             if newtract != self.params[tlist[t]]:
                 self.changeTireTraction(tlist[t],newtract)
-                print(tlist[t] + ': ' + str(self.params[tlist[t]]))
+#                print(tlist[t] + ': ' + str(self.params[tlist[t]]))
 
 
 

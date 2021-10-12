@@ -18,7 +18,8 @@ class simController:
                             "moveThreshold":0,
                             "maxStopMoveLength":np.inf,
                             "terminateIfFlipped":False,
-                            "randomActionScale":[1,1]}
+                            "randomActionScale":[1,1],
+                            }
         self.simulationParams.update(simulationParamsIn)
 
         # set up robot sensing parameters
@@ -29,7 +30,9 @@ class simController:
                             "removeInvalidPointsInPC":False, # remove invalid points in point cloud
                             "senseType":-1, # 0 for terrainMap, 1 for lidar depth image, 2 for lidar point cloud, -1 for nothing
                             "sensorPose":[[0,0,0],[0,0,0,1]], # pose of sensor relative to body
-                            "recordJointStates":False} # whether to record joint data or not
+                            "recordJointStates":False,
+                            "recordVelocity":False,
+                            } # whether to record joint data or not
         self.senseParams.update(senseParamsIn)
 
         # set up simulation
@@ -93,6 +96,7 @@ class simController:
         self.lastStateRecordFlag = False # Flag to tell if last state of robot has been recorded or not
         if self.terrainParamsIn["terrainType"] == "randomRockyTerrain" or self.terrainParamsIn["terrainType"] == "basicFriction":
             self.robot.params["frictionMap"] = self.terrain.frictionMap
+
         self.resetRobot()
 
     def set_sensors(self, sensors):
@@ -147,7 +151,8 @@ class simController:
             else:
                 self.lastAbsoluteState = list(self.lastPose[0])+list(self.lastPose[1])+self.lastVel[:]
         #simulate sensing (generate height map or lidar point cloud)
-        sensingData = self.sensing(self.lastPose)
+#        sensingData = self.sensing(self.lastPose)
+        sensingData = []
         # store state-action for motion prediction
         stateActionData = [self.lastAbsoluteState,sensingData,driveCommand] #(absolute robot state, sensing data, action)
         # command robot throttle & steering and simulate
@@ -184,10 +189,14 @@ class simController:
         pose = self.robot.getPositionOrientation()
         vel = self.robot.getBaseVelocity_body()
         joints = self.robot.measureJoints()
+
+        obs = list(pose[0]) + list(pose[1])
+
+        if self.senseParams['recordVelocity']:
+            obs = obs + vel[:]
+
         if self.senseParams['recordJointStates']:
-            obs = list(pose[0]) + list(pose[1]) + vel[:] + joints[:]
-        else:
-            obs = list(pose[0]) + list(pose[1]) + vel[:]
+            obs = obs + joints[:]
 
         sense_data = {s.topic:torch.stack([s.measure() for _ in range(self.stepsPerControlLoop)], dim=0) if s.is_time_series else s.measure() for s in self.sensors}
 
@@ -306,21 +315,21 @@ class simController:
         # pitchAngle = 90
         # headingAngle = 0
         # pitchAngle = 90
-        view_matrix = p.computeViewMatrixFromYawPitchRoll((posx,posy,posz),.11,headingAngle,pitchAngle,rollAngle,2,physicsClientId=self.physicsClientId)
-        projectionMatrix = p.computeProjectionMatrixFOV(fov=45.0,
-            aspect=1.0,
-            nearVal=0.1,
-            farVal=18.1)
+#        view_matrix = p.computeViewMatrixFromYawPitchRoll((posx,posy,posz),.11,headingAngle,pitchAngle,rollAngle,2,physicsClientId=self.physicsClientId)
+#        projectionMatrix = p.computeProjectionMatrixFOV(fov=45.0,
+#            aspect=1.0,
+#            nearVal=0.1,
+#            farVal=18.1)
         # p.resetDebugVisualizerCamera(1.0,headingAngle,-15,pos,physicsClientId=self.physicsClientId)
 
-        w,h,rgbImg,depthImg,segImg = p.getCameraImage(
-                400,
-                400,
-                view_matrix,
-                projectionMatrix,
-                renderer=p.ER_BULLET_HARDWARE_OPENGL,
-                flags=p.ER_NO_SEGMENTATION_MASK,
-                physicsClientId=self.physicsClientId)
+#        w,h,rgbImg,depthImg,segImg = p.getCameraImage(
+#                400,
+#                400,
+#                view_matrix,
+#                projectionMatrix,
+#                renderer=p.ER_BULLET_HARDWARE_OPENGL,
+#                flags=p.ER_NO_SEGMENTATION_MASK,
+#                physicsClientId=self.physicsClientId)
 
 
         if senseType is None:

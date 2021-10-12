@@ -26,7 +26,7 @@ class FrontCameraSensor:
         self.senseParams.update(senseParamsIn)
         self.env = env
         self.is_time_series = False
-        self.N = [4, self.senseParams["senseResolution"][0],self.senseParams["senseResolution"][1]]
+        self.N = [3, self.senseParams["senseResolution"][0],self.senseParams["senseResolution"][1]]
         self.topic = topic
         self.physicsClientId = physics_client_id
 
@@ -71,7 +71,7 @@ class FrontCameraSensor:
                 flags=p.ER_NO_SEGMENTATION_MASK,
                 physicsClientId=self.physicsClientId)
 
-        fullImg = np.dstack((rgbImg[:, :, :-1],depthImg)) #I'm removing the specularity thing.
+        fullImg = rgbImg[:, :, :-1] #I'm removing the specularity thing.
         torch_img = torch.tensor(fullImg).float()
         torch_img = torch_img.permute(2, 0, 1)
         torch_img[:3, :, :] /= 255. #[0-1 scaling better for learning]
@@ -84,7 +84,7 @@ class FrontCameraSensor:
         msg.info.header.frame_id = "robot"
         msg.info.length_x = self.senseParams["senseResolution"][0]
         msg.info.length_y = self.senseParams["senseResolution"][1]
-        msg.layers.append("RGBAD")
+        msg.layers.append("RGB")
         data = data.numpy()
         data_msg = Float32MultiArray()
         data_msg.layout.dim = [MultiArrayDimension("column_index", data.shape[0], data.shape[0] * data.dtype.itemsize), MultiArrayDimension("row_index", data.shape[1], data.shape[1] * data.dtype.itemsize), MultiArrayDimension("channel_index", data.shape[2], data.shape[2] * data.dtype.itemsize)]

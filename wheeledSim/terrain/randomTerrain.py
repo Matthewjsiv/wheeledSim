@@ -304,10 +304,10 @@ class obstacleCourse(terrain):
         self.frictionMap -= min(0., self.frictionMap.min()) - self.terrainParams["frictionOffset"]
         im = self.get_friction_map()
 
-        maybe_mkdir("friction_maps", force=True)
-        im.save("friction_maps/friction_map_{}.png".format(self.n_terrains))
+        maybe_mkdir("env_{}_friction_maps".format(self.physicsClientId), force=True)
+        im.save("env_{}_friction_maps/friction_map_{}.png".format(self.physicsClientId, self.n_terrains))
 
-        self.updateTerrain(texture_fp="friction_maps/friction_map_{}.png".format(self.n_terrains))
+        self.updateTerrain(texture_fp="env_{}_friction_maps/friction_map_{}.png".format(self.physicsClientId, self.n_terrains))
         self.n_terrains += 1
 
     def get_friction_map(self):
@@ -383,7 +383,6 @@ class basicFriction(terrain):
         randomSeed = np.random.rand(2)*1000
         return np.array([pnoise2(randomSeed[0]+xPoints[i]*perlinScale,randomSeed[1]+yPoints[i]*perlinScale) for i in range(len(xPoints))])*heightScale
 
-
 class randomRockyTerrain(terrain):
     """
     This class handles the generation of random rocky terrain
@@ -410,8 +409,11 @@ class randomRockyTerrain(terrain):
         # generate random blocks
         if copyBlockHeight is None:
             numCells = int(float(self.mapSize[0])*float(self.mapSize[1])/float(self.terrainParams["AverageAreaPerCell"]))
-            blockHeights = self.randomSteps(self.gridX.reshape(-1),self.gridY.reshape(-1),numCells,self.terrainParams["cellPerlinScale"],self.terrainParams["cellHeightScale"])
-            blockHeights = gaussian_filter(blockHeights.reshape(self.gridX.shape), sigma=self.terrainParams["smoothing"])
+            if self.terrainParams["cellHeightScale"] < 1e-4:
+                blockHeights = np.zeros_like(self.gridX)
+            else:
+                blockHeights = self.randomSteps(self.gridX.reshape(-1),self.gridY.reshape(-1),numCells,self.terrainParams["cellPerlinScale"],self.terrainParams["cellHeightScale"])
+                blockHeights = gaussian_filter(blockHeights.reshape(self.gridX.shape), sigma=self.terrainParams["smoothing"])
         else:
             blockHeights=copyBlockHeight
         # add more small noise

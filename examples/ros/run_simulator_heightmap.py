@@ -107,18 +107,8 @@ if __name__ == '__main__':
 
     #Simulator
     cmd_sub = rospy.Subscriber("/cmd", AckermannDriveStamped, env.handle_cmd, queue_size=1)
-    plan_sub = rospy.Subscriber("/plan", AckermannDriveArray, controller.handle_plan, queue_size=1)
-    cmd_pub = rospy.Publisher("/cmd", AckermannDriveStamped, queue_size=1)
     odom_pub = rospy.Publisher("/odom", Odometry, queue_size=1)
     heightmap_pub = rospy.Publisher("/heightmap", GridMap, queue_size=1)
-
-    T = 50
-    cmd_buf = torch.zeros(T, 2)
-    pred_state_buf = torch.zeros(T, 2)
-    gt_state_buf = torch.zeros(T, 2)
-    pred_traj_buf = torch.zeros(T, 3)
-    gt_traj_buf = torch.zeros(T, 2)
-    time_buf = []
 
     while not rospy.is_shutdown():
         env.step()
@@ -126,8 +116,5 @@ if __name__ == '__main__':
 
         odom_pub.publish(state)
         heightmap_pub.publish(sensing['heightmap'])
-        cmd = controller.get_cmd()
-        print("Cmd = \n", cmd)
-        cmd_pub.publish(cmd)
 
         rate.sleep()

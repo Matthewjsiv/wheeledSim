@@ -28,13 +28,15 @@
     depthScale: 1
 
   terrainParams:
-    AverageAreaPerCell: 3.0
-    cellPerlinScale: 0.5
+    AverageAreaPerCell: 5.0
+    cellPerlinScale: 1.0
     cellHeightScale: 0.0
-    smoothing: 0.7
-    perlinScale: 0.9
+    smoothing: 10.0
+    perlinScale: 2.0
     perlinHeightScale: 0.0
+    frictionPerlinScale: 0.2
     frictionScale: 0.0
+    frictionOffset: 1.0
 
   senseParams:
       senseType: -1
@@ -43,17 +45,10 @@
       explorationType: "boundedExplorationNoise"
 
   sensors:
-      FrontCamera:
-          type: FrontCameraSensor
-          topic: front_camera
-          params:
-              FOV: 45.0
-              aspect: 1.0
-              senseResolution: [128, 128]
+      ShockTravelSensor:
+          type: ShockTravelSensor
+          topic: shock_travel
 
-      LocalHeightmapSensor:
-          type: LocalHeightmapSensor
-          topic: heightmap
-          params:
-              senseResolution: [128, 128]
-              senseDim: [5.0, 5.0]
+      IMUSensor:
+          type: IMUSensor
+          topic: imu

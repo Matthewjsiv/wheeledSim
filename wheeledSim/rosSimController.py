@@ -33,6 +33,8 @@ class rosSimController(simController):
         # initialize all sensors from config file
         sensors = []
         self.sense_dict = config.get('sensors', {})
+        if self.sense_dict is None:
+            self.sense_dict = {}
 
         for sensor in self.sense_dict.values():
             assert sensor['type'] in sensor_str_to_obj.keys(), "{} not a valid sensor type. Valid sensor types are {}".format(sensor['type']. sensor_str_to_obj.keys())
@@ -63,6 +65,8 @@ class rosSimController(simController):
     def state_to_odom(self, state):
         msg = Odometry()
         msg.header.stamp = rospy.Time.now()
+        msg.header.frame_id = "world"
+        msg.child_frame_id = "robot"
         msg.pose.pose.position.x = state[0]
         msg.pose.pose.position.y = state[1]
         msg.pose.pose.position.z = state[2]

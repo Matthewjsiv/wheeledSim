@@ -3,12 +3,12 @@ import numpy as np
 import os
 
 # This class adds a clifford (wheeled off road) robot to a given PyBullet simulation
-class Clifford:
+class SimpleCar:
     def __init__(self,t_params, sdfRootPath=None,physicsClientId=0, params={}):
         if sdfRootPath is None:
             sdfRootPath = os.path.abspath(os.path.join(os.path.realpath(__file__),'../'))
         # this is the folder that the file clifford.sdf is in (relative to the folder this script is in)
-        self.sdfPath = os.path.abspath(os.path.join(sdfRootPath,'clifford.sdf'))
+        self.sdfPath = os.path.abspath(os.path.join(sdfRootPath,'simple_car.urdf'))
         # define which PyBullet simulation to use
         self.physicsClientId=physicsClientId
         # Default parameters to use with Clifford
@@ -25,10 +25,10 @@ class Clifford:
                         "tireMassScale":1.0,
                         "fixedSuspension":False,
                         "frictionMap": np.ones([512,512]),
-                        "fltire": 1.5,
-                        "frtire": 1.5,
-                        "bltire":1.5,
-                        "brtire":1.5}
+                        "front_left_wheel_link": 1.5,
+                        "front_right_wheel_link": 1.5,
+                        "back_left_wheel_link":1.5,
+                        "back_right_wheel_link":1.5}
         self.mapWidth = t_params["mapWidth"]
         self.mapHeight = t_params["mapHeight"]
         self.widthScale = t_params["widthScale"]
@@ -38,40 +38,32 @@ class Clifford:
             if param in params:
                 self.params[param] = params[param]
         # set up Clifford robot in simulation
+
         self.importClifford()
 
     def importClifford(self):
         # load sdf file (this file defines open chain clifford. need to add constraints to make closed chain)
-        self.cliffordID = p.loadSDF(self.sdfPath,physicsClientId=self.physicsClientId)[0]
+        self.cliffordID = p.loadURDF(self.sdfPath,physicsClientId=self.physicsClientId)
         # define number of joints of clifford robot
         nJoints = p.getNumJoints(self.cliffordID,physicsClientId=self.physicsClientId)
         initialJointStates = p.getJointStatesMultiDof(self.cliffordID,range(nJoints),physicsClientId=self.physicsClientId)
         self.initialJointPositions = [initialJointStates[i][0] for i in range(nJoints)]
         self.initialJointVelocities = [initialJointStates[i][1] for i in range(nJoints)]
         self.buildModelDict()
-        linkFrame2Joint ={}
-        linkFrame2Joint['upperSpring'] = [0,0,0]
-        linkFrame2Joint['outer'] = [0.23,0,0]
-        linkFrame2Joint['inner'] = [0.195,0,0]
-        self.addClosedChainConstraint('brsupper',linkFrame2Joint['upperSpring'])
-        self.addClosedChainConstraint('blsupper',linkFrame2Joint['upperSpring'])
-        self.addClosedChainConstraint('frsupper',linkFrame2Joint['upperSpring'])
-        self.addClosedChainConstraint('flsupper',linkFrame2Joint['upperSpring'])
-        self.addClosedChainConstraint('bri',linkFrame2Joint['inner'])
-        self.addClosedChainConstraint('bli',linkFrame2Joint['inner'])
-        self.addClosedChainConstraint('fri',linkFrame2Joint['inner'])
-        self.addClosedChainConstraint('fli',linkFrame2Joint['inner'])
-        self.addClosedChainConstraint('blo',linkFrame2Joint['outer'])
-        self.addClosedChainConstraint('flo',linkFrame2Joint['outer'])
+
         self.loosenModel()
         self.changeTraction()
-        self.changeColor()
+#        self.changeColor()
         self.reset()
+
     def reset(self,pose=[[0,0,0.3],[0,0,0,1]]):
-#        import pdb;pdb.set_trace()
         p.resetBasePositionAndOrientation(self.cliffordID, pose[0],pose[1],physicsClientId=self.physicsClientId)
         nJoints = p.getNumJoints(self.cliffordID,physicsClientId=self.physicsClientId)
-        p.resetJointStatesMultiDof(self.cliffordID,range(nJoints),self.initialJointPositions,self.initialJointVelocities,physicsClientId=self.physicsClientId)
+
+        reset_positions = [self.initialJointPositions[i] for i in self.resetJointsIDs]
+        reset_velocities = [self.initialJointVelocities[i] for i in self.resetJointsIDs]
+        p.resetJointStatesMultiDof(self.cliffordID,self.resetJointsIDs,reset_positions,reset_velocities,physicsClientId=self.physicsClientId)
+
     def buildModelDict(self):
         nJoints = p.getNumJoints(self.cliffordID,physicsClientId=self.physicsClientId)
         self.jointNameToID = {}
@@ -80,23 +72,25 @@ class Clifford:
             JointInfo = p.getJointInfo(self.cliffordID,i,physicsClientId=self.physicsClientId)
             self.jointNameToID[JointInfo[1].decode('UTF-8')] = JointInfo[0]
             self.linkNameToID[JointInfo[12].decode('UTF-8')] = JointInfo[0]
-        measuredJointNames = ['frslower2upper','flslower2upper','brslower2upper','blslower2upper','axle2frwheel','frwheel2tire','flwheel2tire','brwheel2tire','blwheel2tire']
+
+        measuredJointNames = ['steer_joint', 'front_left_wheel_joint', 'front_right_wheel_joint', 'back_left_wheel_joint', 'back_right_wheel_joint']
         self.measuredJointIDs = [self.jointNameToID[name] for name in measuredJointNames]
         self.motorJointsIDs = [self.jointNameToID[name] for name in measuredJointNames[-4:]]
-        springJointNames = ['brslower2upper','blslower2upper','frslower2upper','flslower2upper']
-        self.springJointIDs = [self.jointNameToID[name] for name in springJointNames]
+        self.resetJointsIDs = [i for i in range(nJoints) if len(self.initialJointPositions[i]) > 0]
+
     def changeColor(self,color=None):
         nJoints = p.getNumJoints(self.cliffordID,physicsClientId=self.physicsClientId)
         if color is None:
             color = [0.6,0.1,0.1,1]
         for i in range(-1,nJoints):
             p.changeVisualShape(self.cliffordID,i,rgbaColor=color,specularColor=color,physicsClientId=self.physicsClientId)
-        tires = ['frtire','fltire','brtire','bltire']
+        tires = ['front_left_wheel_link','front_right_wheel_link','back_left_wheel_link','back_right_wheel_link']
         for tire in tires:
             p.changeVisualShape(self.cliffordID,self.linkNameToID[tire],rgbaColor=[0.15,0.15,0.15,1],specularColor=[0.15,0.15,0.15,1],physicsClientId=self.physicsClientId)
+
     def loosenModel(self):
         nJoints = p.getNumJoints(self.cliffordID,physicsClientId=self.physicsClientId)
-        tireIndices = [self.linkNameToID[name] for name in ['frtire','fltire','brtire','bltire']]
+        tireIndices = [self.linkNameToID[name] for name in ['front_left_wheel_link','front_right_wheel_link','back_left_wheel_link','back_right_wheel_link']]
         for i in range(nJoints):
             if len(p.getJointStateMultiDof(bodyUniqueId=self.cliffordID,jointIndex=i,physicsClientId=self.physicsClientId)[0]) == 4 \
             and not self.params["fixedSuspension"]:
@@ -114,44 +108,11 @@ class Clifford:
             newMass = dynamicsData[0]*massScale
             newInertia = [dynamicsData[2][j]*massScale for j in range(len(dynamicsData[2]))]
             p.changeDynamics(self.cliffordID,i,mass = newMass, localInertiaDiagonal=newInertia,linearDamping=0.2,angularDamping=0.2,restitution=0,physicsClientId=self.physicsClientId)
-        springJointNames = ['brslower2upper','blslower2upper','frslower2upper','flslower2upper']
-        springConstant = 0
-        springDamping = 0
-        maxSpringForce = 0
-        for name in springJointNames:
-            #JointInfo = p.getJointInfo(self.cliffordID,self.jointNameToID[name],physicsClientId=self.physicsClientId)
-            #p.setJointMotorControlArray(bodyUniqueId=self.cliffordID,
-            #                        jointIndices=[self.jointNameToID[name]],
-            #                        controlMode=p.POSITION_CONTROL,
-            #                        targetPositions=[0],
-            #                        positionGains=[springConstant],
-            #                        velocityGains=[springDamping],
-            #                        forces=[maxSpringForce],physicsClientId=self.physicsClientId)
-            if not self.params["fixedSuspension"]:
-                p.changeDynamics(self.cliffordID,self.jointNameToID[name],jointLowerLimit=self.params["susLowerLimit"],jointUpperLimit=self.params["susUpperLimit"],physicsClientId=self.physicsClientId)
-    def addClosedChainConstraint(self,linkName,linkFrame2Joint):
-        linkState = p.getLinkState(self.cliffordID,self.linkNameToID[linkName],physicsClientId=self.physicsClientId)
-        bodyState = p.getBasePositionAndOrientation(self.cliffordID,physicsClientId=self.physicsClientId)
-        world2joint = p.multiplyTransforms(linkState[4],linkState[5],linkFrame2Joint,[0,0,0,1])
-        body2world = p.invertTransform(bodyState[0],bodyState[1])
-        body2joint = p.multiplyTransforms(body2world[0],body2world[1],world2joint[0],world2joint[1])
-        linkcm2world = p.invertTransform(linkState[0],linkState[1])
-        linkcm2joint = p.multiplyTransforms(linkcm2world[0],linkcm2world[1],world2joint[0],world2joint[1])
-        c = p.createConstraint(self.cliffordID,-1,self.cliffordID,self.linkNameToID[linkName],p.JOINT_POINT2POINT,[0,0,0],body2joint[0],linkcm2joint[0],physicsClientId=self.physicsClientId)
-        #c = p.createConstraint(self.cliffordID,
-        #                       self.jointNameToID['axle2frwheel'],
-        #                       self.cliffordID,
-        #                       self.jointNameToID['axle2flwheel'],
-        #                       jointType=p.JOINT_GEAR,
-        #                       jointAxis=[0, 1, 0],
-        #                       parentFramePosition=[0, 0, 0],
-        #                       childFramePosition=[0, 0, 0],physicsClientId=self.physicsClientId)
-        p.changeConstraint(c, gearRatio=-1, maxForce=10000,physicsClientId=self.physicsClientId)
 
     def changeTraction(self,newTraction=None):
         if newTraction!=None:
             self.params["traction"] = newTraction
-        tires = ['frtire','fltire','brtire','bltire']
+        tires = ['front_left_wheel_link','front_right_wheel_link','back_left_wheel_link','back_right_wheel_link']
         for tire in tires:
             p.changeDynamics(self.cliffordID,self.linkNameToID[tire],lateralFriction=self.params["traction"],physicsClientId=self.physicsClientId)
 
@@ -172,7 +133,7 @@ class Clifford:
 
     def updateTraction4Tire(self):
         #order should allegedly be
-        tlist = ['frtire','fltire','brtire','bltire']
+        tlist = ['front_left_wheel_link','front_right_wheel_link','back_left_wheel_link','back_right_wheel_link']
         poses = self.getTirePos()
         fm = self.params["frictionMap"]
 
@@ -185,21 +146,11 @@ class Clifford:
                 self.changeTireTraction(tlist[t],newtract)
 #                print(tlist[t] + ': ' + str(self.params[tlist[t]]))
 
-
-
     def updateSpringForce(self):
-        if self.params["fixedSuspension"]:
-            return
-        springStates = p.getJointStates(self.cliffordID,self.springJointIDs,physicsClientId=self.physicsClientId)
-        susForces = []
-        for springState in springStates:
-            posErr = self.params["susOffset"] -springState[0]
-            velErr = -springState[1]
-            susForces.append(posErr*self.params["susSpring"]+velErr*self.params["susDamping"])#-10)
-        p.setJointMotorControlArray(self.cliffordID,self.springJointIDs,p.TORQUE_CONTROL,forces=susForces,physicsClientId=self.physicsClientId)
+        pass
 
     def drive(self,driveSpeed):
-        maxForce = 10
+        maxForce = 100
         p.setJointMotorControlArray(self.cliffordID,self.motorJointsIDs,p.VELOCITY_CONTROL,
                                     targetVelocities=[driveSpeed*self.params["maxThrottle"]]*4,
                                     forces=[maxForce]*4,
@@ -207,14 +158,14 @@ class Clifford:
     def steer(self,angle):
         maxForce = 10000
         p.setJointMotorControl2(bodyUniqueId=self.cliffordID,
-        jointIndex=self.jointNameToID['axle2frwheel'],
+        jointIndex=self.jointNameToID['front_right_bar_joint'],
         controlMode=p.POSITION_CONTROL,
         maxVelocity = 10,
         targetPosition = angle*self.params["maxSteerAngle"],
         force = maxForce,physicsClientId=self.physicsClientId)
 
         p.setJointMotorControl2(bodyUniqueId=self.cliffordID,
-        jointIndex=self.jointNameToID['axle2flwheel'],
+        jointIndex=self.jointNameToID['front_left_bar_joint'],
         controlMode=p.POSITION_CONTROL,
         maxVelocity = 10,
         targetPosition = angle*self.params["maxSteerAngle"],
@@ -249,7 +200,7 @@ class Clifford:
         return measurements
     def getTirePos(self):
         # print(self.linkNameToID)
-        tires = ['frtire','fltire','brtire','bltire']
+        tires = ['front_left_wheel_link','front_right_wheel_link','back_left_wheel_link','back_right_wheel_link']
         id_list = []
         for tire in tires:
             id_list.append(self.linkNameToID[tire])

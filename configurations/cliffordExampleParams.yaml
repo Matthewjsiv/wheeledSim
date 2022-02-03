@@ -27,14 +27,14 @@
     mapHeight: 300  # height of matrix
     widthScale: 0.1  # each pixel corresponds to this distance
     heightScale: 0.1
-    depthScale: 2
+    depthScale: 1.5
 
   terrainParams:
-    AverageAreaPerCell: 1.0
-    cellPerlinScale: 5
+    AverageAreaPerCell: 3.0
+    cellPerlinScale: 1.0
     cellHeightScale: 0.6  # parameters for generating terrain
     smoothing: 0.7
-    perlinScale: 2.5
+    perlinScale: 1.5
     perlinHeightScale: 0.1
     terrainType: "randomRockyTerrain"
 
@@ -46,18 +46,6 @@
       explorationType: "boundedExplorationNoise"
 
   sensors:
-      Lidar:
-          type: LidarSensor
-          topic: lidar
-          params:
-              senseDim: [6.2832, 0.7854] # [2.*np.pi,np.pi/4.] angular width and height of lidar sensing
-              lidarAngleOffset: [0,0] # offset of lidar sensing angle
-              lidarRange: 120 # max distance of lidar sensing
-              senseResolution: [512,16] # resolution of sensing (width x height)
-              removeInvalidPointsInPC: False # remove invalid points in point cloud
-              senseType: 0
-              sensorPose: [[0,0,0.3],[0,0,0,1]] # pose of sensor relative to body
-
       FrontCamera:
           type: FrontCameraSensor
           topic: front_camera
@@ -67,14 +55,3 @@
               senseResolution: [128, 128]
               sensorPose: [[0.06,0,0.14],[0,0,0,1]]
               sensorAngle: 10
-
-      LocalHeightmapSensor:
-          type: LocalHeightmapSensor
-          topic: heightmap
-          params:
-              senseResolution: [128, 128]
-              senseDim: [5.0, 5.0]
-
-      ShockTravelSensor:
-          type: ShockTravelSensor
-          topic: shock_travel

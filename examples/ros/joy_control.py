@@ -64,8 +64,8 @@ class JoyToSpeed(object):
             self.params['K_steer'] = min(max(self.params['K_steer'] - self.steer_step, self.K_steer_min), self.K_steer_max)
 
         #Throttle/steer trim (these are on an axis)
-        self.params['K_throttle'] = min(max(self.params['K_throttle'] + self.throttle_step * self.k_trim * msg.axes[5], self.K_throttle_min), self.K_throttle_max)
-        self.params['K_steer'] = min(max(self.params['K_steer'] - self.steer_step * self.k_trim * msg.axes[4], self.K_steer_min), self.K_steer_max)
+#        self.params['K_throttle'] = min(max(self.params['K_throttle'] + self.throttle_step * self.k_trim * msg.axes[5], self.K_throttle_min), self.K_throttle_max)
+#        self.params['K_steer'] = min(max(self.params['K_steer'] - self.steer_step * self.k_trim * msg.axes[4], self.K_steer_min), self.K_steer_max)
 
     def update_cmd(self):
         throttle_noise = np.random.randn() * self.params['noise_throttle']
@@ -75,7 +75,7 @@ class JoyToSpeed(object):
 
         self.cmd.header.stamp = rospy.Time.now()
         self.cmd.drive.speed = self.joy_msg.axes[1] * self.params['K_throttle']
-        self.cmd.drive.steering_angle = self.joy_msg.axes[2] * self.params['K_steer']
+        self.cmd.drive.steering_angle = self.joy_msg.axes[3] * self.params['K_steer']
 
         if abs(self.cmd.drive.speed) > self.noise_threshold:
             self.cmd.drive.speed += throttle_noise

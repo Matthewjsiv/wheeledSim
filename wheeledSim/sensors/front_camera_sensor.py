@@ -4,6 +4,7 @@ import torch
 import pybullet as p
 
 from grid_map_msgs.msg import GridMap
+from sensor_msgs.msg import Image
 from std_msgs.msg import Float32MultiArray, MultiArrayDimension
 
 
@@ -20,7 +21,8 @@ class FrontCameraSensor:
                             "senseResolution":[128, 128], #width/height of the image
                             "camDist": .11, #distance from camera point to render camera image
                             "sensorPose":[[0., 0., 0.], [0., 0., 0., 1.]],
-                            "sensorAngle":0.
+                            "sensorAngle":0.,
+                            "msgType":"Image" # One of GridMap, Image. What to return image as. Image recommended.
                             }
 
         self.senseParams.update(senseParamsIn)
@@ -79,16 +81,25 @@ class FrontCameraSensor:
         return torch_img
 
     def to_rosmsg(self, data):
-        msg = GridMap()
-        msg.info.header.stamp = rospy.Time.now()
-        msg.info.header.frame_id = "robot"
-        msg.info.length_x = self.senseParams["senseResolution"][0]
-        msg.info.length_y = self.senseParams["senseResolution"][1]
-        msg.layers.append("RGB")
-        data = data.numpy()
-        data_msg = Float32MultiArray()
-        data_msg.layout.dim = [MultiArrayDimension("column_index", data.shape[0], data.shape[0] * data.dtype.itemsize), MultiArrayDimension("row_index", data.shape[1], data.shape[1] * data.dtype.itemsize), MultiArrayDimension("channel_index", data.shape[2], data.shape[2] * data.dtype.itemsize)]
-        data_msg.data = data.reshape([1, -1])[0].tolist()
-        msg.data = [data_msg]
-
+        if self.senseParams['msgType'] == 'GridMap':
+            msg = GridMap()
+            msg.info.header.stamp = rospy.Time.now()
+            msg.info.header.frame_id = "robot"
+            msg.info.length_x = self.senseParams["senseResolution"][0]
+            msg.info.length_y = self.senseParams["senseResolution"][1]
+            msg.layers.append("RGB")
+            data = data.numpy()
+            data_msg = Float32MultiArray()
+            data_msg.layout.dim = [MultiArrayDimension("column_index", data.shape[0], data.shape[0] * data.dtype.itemsize), MultiArrayDimension("row_index", data.shape[1], data.shape[1] * data.dtype.itemsize), MultiArrayDimension("channel_index", data.shape[2], data.shape[2] * data.dtype.itemsize)]
+            data_msg.data = data.reshape([1, -1])[0].tolist()
+            msg.data = [data_msg]
+        elif self.senseParams['msgType'] == 'Image':
+            msg = Image()
+            msg.header.stamp = rospy.Time.now()
+            msg.header.frame_id = "robot"
+            msg.height = data.shape[1]
+            msg.width = data.shape[2]
+            msg.encoding = "rgb8"
+            msg.data = (255*data).permute(1, 2, 0).numpy().astype(np.uint8).tostring()
+            
         return msg

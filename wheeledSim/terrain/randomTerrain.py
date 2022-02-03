@@ -535,3 +535,72 @@ class randomRockyTerrain(terrain):
     def perlinNoise(self,xPoints,yPoints,perlinScale,heightScale):
         randomSeed = np.random.rand(2)*1000
         return np.array([pnoise2(randomSeed[0]+xPoints[i]*perlinScale,randomSeed[1]+yPoints[i]*perlinScale) for i in range(len(xPoints))])*heightScale
+
+class RacetrackTerrain(terrain):
+    """
+    A simple racetrack setup to do a baseline test for LaND
+    """
+    def __init__(self,terrainMapParamsIn={},physicsClientId=0):
+        self.physicsClientId = physicsClientId
+        # base parameters for map used to generate terrain
+        self.terrainMapParams = {"mapWidth":300, # width of matrix
+                        "mapHeight":300, # height of matrix
+                        "widthScale":0.1, # each pixel corresponds to this distance
+                        "heightScale":0.1,
+                        "depthScale":0.1,
+                        "trackWidth":1.5}
+        self.terrainMapParams.update(terrainMapParamsIn)
+        # store parameters
+        self.mapWidth = self.terrainMapParams["mapWidth"]
+        self.mapHeight = self.terrainMapParams["mapHeight"]
+        # self.meshScale = [self.terrainMapParams["widthScale"],self.terrainMapParams["heightScale"],1]
+        self.meshScale = [self.terrainMapParams["widthScale"],self.terrainMapParams["heightScale"],self.terrainMapParams["depthScale"]]
+
+        self.mapSize = [(self.mapWidth-1)*self.meshScale[0],(self.mapHeight-1)*self.meshScale[1]] # dimension of terrain (meters x meters)
+        # define x and y of map grid
+        self.gridX = np.linspace(-self.mapSize[0]/2.0,self.mapSize[0]/2.0,self.mapWidth)
+        self.gridY = np.linspace(-self.mapSize[1]/2.0,self.mapSize[1]/2.0,self.mapHeight)
+        self.gridX,self.gridY = np.meshgrid(self.gridX,self.gridY)
+        self.gridZ = np.zeros_like(self.gridX)
+        self.terrainShape = [] # used to replace terrain shape if it already exists
+        self.terrainBody = []
+        self.road_color = [0., 0., 0., 1.]
+        self.ob_color = [0., 1., 0., 1.]
+
+    def generate(self, terrainParamsIn=None):
+        """
+        Generate a loop that passes through 0,0. For now, start very simple and draw an ellipse
+        """
+        xmax = self.terrainMapParams['widthScale'] * self.terrainMapParams['mapWidth']/2
+        ymax = self.terrainMapParams['widthScale'] * self.terrainMapParams['mapWidth']/2
+        xmin = -xmax
+        ymin = -ymax
+
+        a = (np.random.rand() * (xmax/2 - 1)) + xmax/2
+        b = (np.random.rand() * (ymax/4 - 1)) + ymax/4
+        e = np.sqrt(1 - (min(a, b)/max(a, b))**2)
+
+        th = np.linspace(0., 2*np.pi, 1000)
+        r = max(a,b) * np.sqrt(1 - (e**2) * (np.sin(th)**2))
+        x = r*np.cos(th)
+        y = r*np.sin(th) + b
+        pts = np.stack([x,y], axis=1)
+
+        #Draw the racetrack image
+        iw=300
+        ih=300
+        _img = np.zeros([iw,ih,4])
+        for i,x in enumerate(np.linspace(xmin,xmax,iw)):
+            for j,y in enumerate(np.linspace(ymin,ymax,ih)):
+                dists = np.linalg.norm(np.array([x,y]) - pts, axis=1)
+                _img[i,j] = np.array(self.road_color if dists.min() < self.terrainMapParams['trackWidth'] else self.ob_color)
+
+        #plt.imshow(_img);plt.show()
+
+        im = Image.fromarray(np.swapaxes(_img[:, :, :3]*255, 0, 1).astype(np.uint8))
+
+        #plt.imshow(im);plt.show()
+
+        im.save("friction_map.png")
+
+        self.updateTerrain(texture_fp="friction_map.png")

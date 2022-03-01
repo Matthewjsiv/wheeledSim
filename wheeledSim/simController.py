@@ -72,6 +72,8 @@ class simController:
                     self.terrain = obstacleCourse(terrainMapParamsIn,physicsClientId=self.physicsClientId)
             elif self.terrainParamsIn["terrainType"] == "racetrack":
                     self.terrain = RacetrackTerrain(terrainMapParamsIn,physicsClientId=self.physicsClientId)
+            elif self.terrainParamsIn["terrainType"] == "pregenerate_racetrack":
+                    self.terrain = PregenerateRacetrackTerrain(terrainMapParamsIn,physicsClientId=self.physicsClientId)
             else:
                 self.terrain = self.terrainParamsIn["terrainType"](terrainMapParamsIn,physicsClientId=self.physicsClientId)
             self.newTerrain()

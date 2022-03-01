@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from skimage.draw import random_shapes
 
 from wheeledSim.util import maybe_mkdir
+from wheeledSim.terrain.racetrack_generation import *
 
 class terrain(object):
     """
@@ -600,6 +601,80 @@ class RacetrackTerrain(terrain):
         im = Image.fromarray(np.swapaxes(_img[:, :, :3]*255, 0, 1).astype(np.uint8))
 
         #plt.imshow(im);plt.show()
+
+        im.save("friction_map.png")
+
+        self.updateTerrain(texture_fp="friction_map.png")
+
+class PregenerateRacetrackTerrain(RacetrackTerrain):
+    """
+    Same as racetrack terrain, but use a pregenerated set of maps
+    """
+    def __init__(self,terrainMapParamsIn={},physicsClientId=0):
+        self.physicsClientId = physicsClientId
+        # base parameters for map used to generate terrain
+        self.terrainMapParams = {"mapWidth":300, # width of matrix
+                        "mapHeight":300, # height of matrix
+                        "widthScale":0.1, # each pixel corresponds to this distance
+                        "heightScale":0.1,
+                        "depthScale":0.1,
+                        "trackWidth":1.5,
+                        "trackDir":"tracks"}
+        self.terrainMapParams.update(terrainMapParamsIn)
+        # store parameters
+        self.mapWidth = self.terrainMapParams["mapWidth"]
+        self.mapHeight = self.terrainMapParams["mapHeight"]
+        # self.meshScale = [self.terrainMapParams["widthScale"],self.terrainMapParams["heightScale"],1]
+        self.meshScale = [self.terrainMapParams["widthScale"],self.terrainMapParams["heightScale"],self.terrainMapParams["depthScale"]]
+
+        self.mapSize = [(self.mapWidth-1)*self.meshScale[0],(self.mapHeight-1)*self.meshScale[1]] # dimension of terrain (meters x meters)
+        # define x and y of map grid
+        self.gridX = np.linspace(-self.mapSize[0]/2.0,self.mapSize[0]/2.0,self.mapWidth)
+        self.gridY = np.linspace(-self.mapSize[1]/2.0,self.mapSize[1]/2.0,self.mapHeight)
+        self.gridX,self.gridY = np.meshgrid(self.gridX,self.gridY)
+        self.gridZ = np.zeros_like(self.gridX)
+        self.terrainShape = [] # used to replace terrain shape if it already exists
+        self.terrainBody = []
+        self.road_color = [0., 0., 0., 1.]
+        self.ob_color = [0., 1., 0., 1.]
+
+        self.track_dir = self.terrainMapParams["trackDir"]
+        self.tracks = os.listdir(self.track_dir)
+
+    def generate(self, terrainParamsIn=None, track_idx=-1):
+        """
+        Generate a loop that passes through 0,0. For now, start very simple and draw an ellipse
+        """
+        xmax = self.terrainMapParams['widthScale'] * self.terrainMapParams['mapWidth']/2
+        ymax = self.terrainMapParams['widthScale'] * self.terrainMapParams['mapWidth']/2
+        xmin = -xmax
+        ymin = -ymax
+
+        track_file = self.tracks[track_idx] if track_idx >= 0 else np.random.choice(self.tracks)
+        pts = np.load(os.path.join(self.track_dir, track_file))
+
+        #Re-scale pts to match terrain size.
+        txmin = pts[:, 0].min()
+        txmax = pts[:, 0].max()
+        tymin = pts[:, 1].min()
+        tymax = pts[:, 1].max()
+        scale = 0.9 * min([abs(xmin/txmin), abs(xmax/txmax), abs(ymin/tymin), abs(ymax/tymax)])
+        pts *= scale
+
+        #Draw the racetrack image
+        iw=300
+        ih=300
+        _img = np.zeros([iw,ih,4])
+        for i,x in enumerate(np.linspace(xmin,xmax,iw)):
+            for j,y in enumerate(np.linspace(ymin,ymax,ih)):
+                dists = np.linalg.norm(np.array([x,y]) - pts, axis=1)
+                _img[i,j] = np.array(self.road_color if dists.min() < self.terrainMapParams['trackWidth'] else self.ob_color)
+
+        plt.imshow(_img);plt.show()
+
+        im = Image.fromarray(np.swapaxes(_img[:, :, :3]*255, 0, 1).astype(np.uint8))
+
+        plt.imshow(im);plt.show()
 
         im.save("friction_map.png")
 

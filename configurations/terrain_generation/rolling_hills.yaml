@@ -1,0 +1,18 @@
+---
+  terrainMapParams:
+    mapWidth: 300  # width of matrix
+    mapHeight: 300  # height of matrix
+    widthScale: 0.1  # each pixel corresponds to this distance
+    heightScale: 0.1
+    depthScale: 1
+
+  terrainParams:
+    flatRadius: 0.0
+    AverageAreaPerCell: 5.0
+    cellPerlinScale: 0.3
+    cellHeightScale: 0.0
+    smoothing: 4.0
+    perlinScale: 0.2
+    perlinHeightScale: 2.0
+    frictionPerlinScale: 0.5
+    frictionScale: 1.0

@@ -11,14 +11,31 @@
     massScale: 1.0
 
   simulationParams:
-    timeStep: 0.002
-    stepsPerControlLoop: 50
-    numSolverIterations: 300
+    timeStep: 0.001
+    stepsPerControlLoop: 200
+    numSolverIterations: 100
     gravity: -10
     contactBreakingThreshold: 0.0001
     contactSlop: 0.0001
     moveThreshold: 0.1
     maxStopMoveLength: 250
+
+#  terrainMapParams:
+#    mapWidth: 300  # width of matrix
+#    mapHeight: 300  # height of matrix
+#    widthScale: 0.1  # each pixel corresponds to this distance
+#    heightScale: 0.1
+#    depthScale: 1
+
+#  terrainParams:
+#    AverageAreaPerCell: 5.0
+#    cellPerlinScale: 0.3
+#    cellHeightScale: 0.0
+#    smoothing: 4.0
+#    perlinScale: 0.2
+#    perlinHeightScale: 2.0
+#    frictionPerlinScale: 0.5
+#    frictionScale: 1.0
 
   terrainMapParams:
     mapWidth: 300  # width of matrix
@@ -28,14 +45,15 @@
     depthScale: 1
 
   terrainParams:
-    AverageAreaPerCell: 5.0
-    cellPerlinScale: 0.3
-    cellHeightScale: 0.0
-    smoothing: 4.0
-    perlinScale: 0.2
-    perlinHeightScale: 2.0
-    frictionPerlinScale: 0.5
-    frictionScale: 1.0
+    flatRadius: 0.0
+    AverageAreaPerCell: 10.0
+    cellPerlinScale: 1.0
+    cellHeightScale: 0.9
+    smoothing: 1.0
+    perlinScale: 1.0
+    perlinHeightScale: 0.25
+    frictionScale: 0.0
+    frictionOffset: 2.0
 
   senseParams:
       senseType: -1

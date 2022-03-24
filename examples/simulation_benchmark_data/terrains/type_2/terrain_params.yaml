@@ -1,8 +1,0 @@
-AverageAreaPerCell: 50.0
-cellHeightScale: 1.0
-cellPerlinScale: 1.0
-frictionOffset: 1.0
-frictionScale: 0.0
-perlinHeightScale: 0.1
-perlinScale: 0.2
-smoothing: 2.0

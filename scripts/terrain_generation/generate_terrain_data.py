@@ -8,8 +8,23 @@ import yaml
 from wheeledSim.terrain.randomTerrain import randomRockyTerrain
 
 def generate_terrain(config, physicsClientId, viz):
+    """
+    Key difference from regular config files is that we need to sample from an exponential distribution
+    """
     terrain = randomRockyTerrain(config['terrainMapParams'])
-    terrain.generate(config['terrainParams'])
+
+    param_distribution = {}
+    for k, v in config['terrainParams'].items():
+        if isinstance(v, float):
+            param_distribution[k] = v
+        else:
+            if v['distribution'] == 'exponential':
+                param_distribution[k] = v['offset'] + np.random.exponential(v['scale'])
+            elif v['distribution'] == 'uniform':
+                param_distribution[k] = np.random.uniform(v['min'], v['max'])
+
+    print(param_distribution)
+    terrain.generate(param_distribution)
 
     assert abs(config['terrainMapParams']['widthScale'] - config['terrainMapParams']['heightScale']) < 1e-4, 'width and height scale have to match'
     width = torch.tensor(

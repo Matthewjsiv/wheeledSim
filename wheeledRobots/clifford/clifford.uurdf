@@ -1,0 +1,566 @@
+<?xml version="1.0" ?>
+<robot name="clifford">
+  <joint name="clifford__body2bro" type="spherical">
+    <parent link="clifford__body"/>
+    <child link="clifford__bro"/>
+    <origin rpy="1.28235  0.26945 -3.09986" xyz="-0.101  -0.0615 -0.024"/>
+    <axis xyz="1  0  0"/>
+    <limit effort="0" lower="0" upper="0" velocity="0"/>
+  </joint>
+  <joint name="clifford__bro2axle" type="spherical">
+    <parent link="clifford__bro"/>
+    <child link="clifford__backAxle"/>
+    <origin rpy="0.66643 -1.26862 -1.70633" xyz="0.23  0    0"/>
+    <axis xyz="1  0  0"/>
+    <limit effort="0" lower="0" upper="0" velocity="0"/>
+  </joint>
+  <joint name="clifford__axle2bli" type="spherical">
+    <parent link="clifford__backAxle"/>
+    <child link="clifford__bli"/>
+    <origin rpy="-0.64732 -0.40798 -1.41089" xyz="0.08675  0.01242  0.07049"/>
+    <axis xyz="1  0  0"/>
+    <limit effort="0" lower="0" upper="0" velocity="0"/>
+  </joint>
+  <joint name="clifford__axle2blo" type="spherical">
+    <parent link="clifford__backAxle"/>
+    <child link="clifford__blo"/>
+    <origin rpy="2.57014 -0.53648 -1.6176" xyz="0.14149  0       0"/>
+    <axis xyz="1  0  0"/>
+    <limit effort="0" lower="0" upper="0" velocity="0"/>
+  </joint>
+  <joint name="clifford__axle2blslower" type="spherical">
+    <parent link="clifford__backAxle"/>
+    <child link="clifford__blslower"/>
+    <origin rpy="-0.50129 -0.88133 -1.77858" xyz="0.16275  0.00017  0.017"/>
+    <axis xyz="1  0  0"/>
+    <limit effort="0" lower="0" upper="0" velocity="0"/>
+  </joint>
+  <joint name="clifford__axle2blwheel" type="fixed">
+    <parent link="clifford__backAxle"/>
+    <child link="clifford__blwheel"/>
+    <origin rpy="-3.14158  0       0" xyz="0.18575  0.02242  0.0055"/>
+    <axis xyz="0  0 -1"/>
+    <limit effort="0.0" lower="0.0" upper="0.0" velocity="0.0"/>
+  </joint>
+  <joint name="clifford__blwheel2tire" type="continuous">
+    <parent link="clifford__blwheel"/>
+    <child link="clifford__bltire"/>
+    <origin rpy="0.55506  0       0" xyz="0.02  0    0"/>
+    <axis xyz="1  0  0"/>
+    <limit effort="0" lower="0" upper="0" velocity="0"/>
+  </joint>
+  <joint name="clifford__axle2bri" type="spherical">
+    <parent link="clifford__backAxle"/>
+    <child link="clifford__bri"/>
+    <origin rpy="1.48444 -0.40798 -1.7307" xyz="0.05475  0.01242  0.07049"/>
+    <axis xyz="1  0  0"/>
+    <limit effort="0" lower="0" upper="0" velocity="0"/>
+  </joint>
+  <joint name="clifford__axle2brslower" type="spherical">
+    <parent link="clifford__backAxle"/>
+    <child link="clifford__brslower"/>
+    <origin rpy="-0.27768 -0.88133 -1.36302" xyz="-0.02125  0.00017  0.017"/>
+    <axis xyz="1  0  0"/>
+    <limit effort="0" lower="0" upper="0" velocity="0"/>
+  </joint>
+  <joint name="clifford__axle2brwheel" type="fixed">
+    <parent link="clifford__backAxle"/>
+    <child link="clifford__brwheel"/>
+    <origin rpy="3.14158  0       3.14158" xyz="-0.04425  0.02242  0.0055"/>
+    <axis xyz="0  0 -1"/>
+    <limit effort="0.0" lower="0.0" upper="0.0" velocity="0.0"/>
+  </joint>
+  <joint name="clifford__brwheel2tire" type="continuous">
+    <parent link="clifford__brwheel"/>
+    <child link="clifford__brtire"/>
+    <origin rpy="-2.70000000e-04   0.00000000e+00   3.14158000e+00" xyz="0.11  0    0"/>
+    <axis xyz="1  0  0"/>
+    <limit effort="0" lower="0" upper="0" velocity="0"/>
+  </joint>
+  <joint name="clifford__body2fro" type="spherical">
+    <parent link="clifford__body"/>
+    <child link="clifford__fro"/>
+    <origin rpy="2.1962   0.26945 -0.04173" xyz="0.101  -0.0615 -0.024"/>
+    <axis xyz="1  0  0"/>
+    <limit effort="0" lower="0" upper="0" velocity="0"/>
+  </joint>
+  <joint name="clifford__fro2Axle" type="spherical">
+    <parent link="clifford__fro"/>
+    <child link="clifford__frontAxle"/>
+    <origin rpy="2.5503   0.93321 -1.63839" xyz="0.23  0    0"/>
+    <axis xyz="1  0  0"/>
+    <limit effort="0" lower="0" upper="0" velocity="0"/>
+  </joint>
+  <joint name="clifford__axle2fli" type="spherical">
+    <parent link="clifford__frontAxle"/>
+    <child link="clifford__fli"/>
+    <origin rpy="0.94717 -0.40798  1.41089" xyz="0.08675 -0.01242  0.07049"/>
+    <axis xyz="1  0  0"/>
+    <limit effort="0" lower="0" upper="0" velocity="0"/>
+  </joint>
+  <joint name="clifford__axle2flo" type="spherical">
+    <parent link="clifford__frontAxle"/>
+    <child link="clifford__flo"/>
+    <origin rpy="0.74325 -0.53648  1.61761" xyz="0.14149  0       0"/>
+    <axis xyz="1  0  0"/>
+    <limit effort="0" lower="0" upper="0" velocity="0"/>
+  </joint>
+  <joint name="clifford__axle2flslower" type="spherical">
+    <parent link="clifford__frontAxle"/>
+    <child link="clifford__flslower"/>
+    <origin rpy="-1.49937 -0.88133  1.77858" xyz="0.16275 -0.00017  0.017"/>
+    <axis xyz="1  0  0"/>
+    <limit effort="0" lower="0" upper="0" velocity="0"/>
+  </joint>
+  <joint name="clifford__axle2flwheel" type="revolute">
+    <parent link="clifford__frontAxle"/>
+    <child link="clifford__flwheel"/>
+    <origin rpy="3.14158  0       0" xyz="0.18575 -0.02242  0.0055"/>
+    <axis xyz="0  0 -1"/>
+    <limit effort="0.0" lower="-0.5" upper="0.5" velocity="0.0"/>
+  </joint>
+  <joint name="clifford__flwheel2tire" type="continuous">
+    <parent link="clifford__flwheel"/>
+    <child link="clifford__fltire"/>
+    <origin rpy="1.97306  0       0" xyz="0.02  0    0"/>
+    <axis xyz="1  0  0"/>
+    <limit effort="0" lower="0" upper="0" velocity="0"/>
+  </joint>
+  <joint name="clifford__axle2fri" type="spherical">
+    <parent link="clifford__frontAxle"/>
+    <child link="clifford__fri"/>
+    <origin rpy="0.81908 -0.40798  1.7307" xyz="0.05475 -0.01242  0.07049"/>
+    <axis xyz="1  0  0"/>
+    <limit effort="0" lower="0" upper="0" velocity="0"/>
+  </joint>
+  <joint name="clifford__axle2frslower" type="spherical">
+    <parent link="clifford__frontAxle"/>
+    <child link="clifford__frslower"/>
+    <origin rpy="-0.64185 -0.88133  1.36301" xyz="-0.02125 -0.00017  0.017"/>
+    <axis xyz="1  0  0"/>
+    <limit effort="0" lower="0" upper="0" velocity="0"/>
+  </joint>
+  <joint name="clifford__axle2frwheel" type="revolute">
+    <parent link="clifford__frontAxle"/>
+    <child link="clifford__frwheel"/>
+    <origin rpy="0       0      -3.14159" xyz="-0.04425 -0.02242  0.0055"/>
+    <axis xyz="0  0 -1"/>
+    <limit effort="0.0" lower="-0.5" upper="0.5" velocity="0.0"/>
+  </joint>
+  <joint name="clifford__frwheel2tire" type="continuous">
+    <parent link="clifford__frwheel"/>
+    <child link="clifford__frtire"/>
+    <origin rpy="-0.8074   0       3.14159" xyz="0.11  0    0"/>
+    <axis xyz="1  0  0"/>
+    <limit effort="0" lower="0" upper="0" velocity="0"/>
+  </joint>
+  <joint name="clifford__brslower2upper" type="prismatic">
+    <parent link="clifford__brslower"/>
+    <child link="clifford__brsupper"/>
+    <origin rpy="1.84296  0      -3.14159" xyz="0.16003  0       0"/>
+    <axis xyz="1  0  0"/>
+    <limit effort="-1.0" lower="-0.005" upper="0.0075" velocity="-1.0"/>
+  </joint>
+  <joint name="clifford__blslower2upper" type="prismatic">
+    <parent link="clifford__blslower"/>
+    <child link="clifford__blsupper"/>
+    <origin rpy="1.84296  0       3.14159" xyz="0.16003  0       0"/>
+    <axis xyz="1  0  0"/>
+    <limit effort="-1.0" lower="-0.005" upper="0.0075" velocity="-1.0"/>
+  </joint>
+  <joint name="clifford__frslower2upper" type="prismatic">
+    <parent link="clifford__frslower"/>
+    <child link="clifford__frsupper"/>
+    <origin rpy="1.01591  0      -3.14159" xyz="0.16003  0       0"/>
+    <axis xyz="1  0  0"/>
+    <limit effort="-1.0" lower="-0.005" upper="0.0075" velocity="-1.0"/>
+  </joint>
+  <joint name="clifford__flslower2upper" type="prismatic">
+    <parent link="clifford__flslower"/>
+    <child link="clifford__flsupper"/>
+    <origin rpy="1.01592  0       3.14159" xyz="0.16003  0       0"/>
+    <axis xyz="1  0  0"/>
+    <limit effort="-1.0" lower="-0.005" upper="0.0075" velocity="-1.0"/>
+  </joint>
+  <link name="clifford__body">
+    <inertial>
+      <mass value="1.20456"/>
+      <origin rpy="0  0  0" xyz="0  0  0"/>
+      <inertia ixx="0.00136339" ixy="-1.92982e-16" ixz="-5.63833e-15" iyy="0.0039261" iyz="3.35564e-17" izz="0.00436726"/>
+    </inertial>
+    <collision name="clifford__body_visual">
+      <origin rpy="0  0  0" xyz="0  0  0"/>
+      <geometry>
+        <mesh filename="package://PATHTOMESHES/body.STL" scale="1 1 1"/>
+      </geometry>
+    </collision>
+    <visual name="clifford__body_visual">
+      <origin rpy="0  0  0" xyz="0  0  0"/>
+      <geometry>
+        <mesh filename="package://PATHTOMESHES/body.STL" scale="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="clifford__bro">
+    <inertial>
+      <mass value="0.0117925"/>
+      <origin rpy="0  0  0" xyz="0.115  0     0"/>
+      <inertia ixx="9.65368e-08" ixy="4.10647e-12" ixz="1.05145e-19" iyy="5.42742e-05" iyz="2.71051e-20" izz="5.42722e-05"/>
+    </inertial>
+    <visual name="clifford__bro_visual">
+      <origin rpy="0  0  0" xyz="0  0  0"/>
+      <geometry>
+        <mesh filename="package://PATHTOMESHES/linkageOut.STL" scale="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="clifford__backAxle">
+    <inertial>
+      <mass value="0.0969889"/>
+      <origin rpy="0  0  0" xyz="0.07074  0.01986  0.01358"/>
+      <inertia ixx="3.59997e-05" ixy="3.0828e-11" ixz="-2.58754e-11" iyy="0.00045052" iyz="9.38007e-07" izz="0.00042565"/>
+    </inertial>
+    <visual name="clifford__backAxle_visual">
+      <origin rpy="0  0  0" xyz="0  0  0"/>
+      <geometry>
+        <mesh filename="package://PATHTOMESHES/axleRear.STL" scale="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="clifford__bli">
+    <inertial>
+      <mass value="0.0200332"/>
+      <origin rpy="0  0  0" xyz="0.0975  0      0"/>
+      <inertia ixx="8.24621e-08" ixy="2.3168e-12" ixz="1.29699e-19" iyy="3.34708e-05" iyz="-3.30343e-20" izz="3.34688e-05"/>
+    </inertial>
+    <visual name="clifford__bli_visual">
+      <origin rpy="0  0  0" xyz="0  0  0"/>
+      <geometry>
+        <mesh filename="package://PATHTOMESHES/linkageIn.STL" scale="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="clifford__blo">
+    <inertial>
+      <mass value="0.0117925"/>
+      <origin rpy="0  0  0" xyz="0.115  0     0"/>
+      <inertia ixx="9.65368e-08" ixy="-4.10647e-12" ixz="2.98276e-19" iyy="5.42742e-05" iyz="-6.94567e-20" izz="5.42722e-05"/>
+    </inertial>
+    <visual name="clifford__blo_visual">
+      <origin rpy="0  0  0" xyz="0  0  0"/>
+      <geometry>
+        <mesh filename="package://PATHTOMESHES/linkageOut.STL" scale="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="clifford__blslower">
+    <inertial>
+      <mass value="0.0112311"/>
+      <origin rpy="0  0  0" xyz="0.01658  0       0"/>
+      <inertia ixx="1.19839e-06" ixy="-7.365e-14" ixz="-1.39475e-14" iyy="9.62721e-07" iyz="1.3652e-15" izz="9.62722e-07"/>
+    </inertial>
+    <visual name="clifford__blslower_visual">
+      <origin rpy="0  0  0" xyz="0  0  0"/>
+      <geometry>
+        <mesh filename="package://PATHTOMESHES/springPart.STL" scale="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="clifford__blsupper">
+    <inertial>
+      <mass value="0.0112311"/>
+      <origin rpy="0  0  0" xyz="0.01658  0       0"/>
+      <inertia ixx="1.19839e-06" ixy="-4.34583e-14" ixz="-1.88149e-14" iyy="9.62721e-07" iyz="1.08668e-15" izz="9.62722e-07"/>
+    </inertial>
+    <visual name="clifford__blsupper_visual">
+      <origin rpy="0  0  0" xyz="0  0  0"/>
+      <geometry>
+        <mesh filename="package://PATHTOMESHES/springPart.STL" scale="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="clifford__blwheel">
+    <inertial>
+      <mass value="0.19539"/>
+      <origin rpy="0  0  0" xyz="0.0075  0      0"/>
+      <inertia ixx="6.03364e-05" ixy="3.16416e-20" ixz="-2.02141e-21" iyy="0.000215224" iyz="6.77626e-21" izz="0.000212705"/>
+    </inertial>
+    <visual name="clifford__blwheel_visual">
+      <origin rpy="0  0  0" xyz="0  0  0"/>
+      <geometry>
+        <mesh filename="package://PATHTOMESHES/wheelHub.STL" scale="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="clifford__bri">
+    <inertial>
+      <mass value="0.0200332"/>
+      <origin rpy="0  0  0" xyz="0.0975  0      0"/>
+      <inertia ixx="8.24621e-08" ixy="-2.3168e-12" ixz="-2.12659e-19" iyy="3.34708e-05" iyz="5.97158e-20" izz="3.34688e-05"/>
+    </inertial>
+    <visual name="clifford__bri_visual">
+      <origin rpy="0  0  0" xyz="0  0  0"/>
+      <geometry>
+        <mesh filename="package://PATHTOMESHES/linkageIn.STL" scale="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="clifford__brslower">
+    <inertial>
+      <mass value="0.0112311"/>
+      <origin rpy="0  0  0" xyz="0.01658  0       0"/>
+      <inertia ixx="1.19839e-06" ixy="6.27133e-15" ixz="-2.09143e-14" iyy="9.62721e-07" iyz="-1.74313e-16" izz="9.62722e-07"/>
+    </inertial>
+    <visual name="clifford__brslower_visual">
+      <origin rpy="0  0  0" xyz="0  0  0"/>
+      <geometry>
+        <mesh filename="package://PATHTOMESHES/springPart.STL" scale="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="clifford__brsupper">
+    <inertial>
+      <mass value="0.0112311"/>
+      <origin rpy="0  0  0" xyz="0.01658  0       0"/>
+      <inertia ixx="1.19839e-06" ixy="-9.65399e-14" ixz="-4.33935e-15" iyy="9.62721e-07" iyz="5.56748e-16" izz="9.62722e-07"/>
+    </inertial>
+    <visual name="clifford__brsupper_visual">
+      <origin rpy="0  0  0" xyz="0  0  0"/>
+      <geometry>
+        <mesh filename="package://PATHTOMESHES/springPart.STL" scale="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="clifford__brwheel">
+    <inertial>
+      <mass value="0.19539"/>
+      <origin rpy="0  0  0" xyz="0.0075  0      0"/>
+      <inertia ixx="6.03364e-05" ixy="8.21409e-21" ixz="-4.18157e-21" iyy="0.000215224" iyz="1.35525e-20" izz="0.000212705"/>
+    </inertial>
+    <visual name="clifford__brwheel_visual">
+      <origin rpy="0  0  0" xyz="0  0  0"/>
+      <geometry>
+        <mesh filename="package://PATHTOMESHES/wheelHub.STL" scale="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="clifford__bltire">
+    <inertial>
+      <mass value="2.65072"/>
+      <origin rpy="0  0  0" xyz="0.045  0     0"/>
+      <inertia ixx="0.0140819" ixy="-2.23921e-19" ixz="-3.27444e-19" iyy="0.00883021" iyz="2.1684e-18" izz="0.00883021"/>
+    </inertial>
+    <collision name="clifford__bltire_collision">
+      <origin rpy="-2.00000000e-05   1.57079000e+00   1.00000000e-05" xyz="0.045  0     0"/>
+      <geometry>
+        <cylinder length="0.09 0 0" radius="0.1 0 0"/>
+      </geometry>
+    </collision>
+    <visual name="clifford__bltire_visual">
+      <origin rpy="-2.00000000e-05   1.57079000e+00   1.00000000e-05" xyz="0.045  0     0"/>
+      <geometry>
+        <cylinder length="0.09 0 0" radius="0.1 0 0"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="clifford__brtire">
+    <inertial>
+      <mass value="2.65072"/>
+      <origin rpy="0  0  0" xyz="0.045  0     0"/>
+      <inertia ixx="0.0140819" ixy="2.01201e-19" ixz="-7.89159e-20" iyy="0.00883021" iyz="-4.33681e-19" izz="0.00883021"/>
+    </inertial>
+    <collision name="clifford__brtire_collision">
+      <origin rpy="0       1.57079  0" xyz="0.045  0     0"/>
+      <geometry>
+        <cylinder length="0.09 0 0" radius="0.1 0 0"/>
+      </geometry>
+    </collision>
+    <visual name="clifford__brtire_visual">
+      <origin rpy="0       1.57079  0" xyz="0.045  0     0"/>
+      <geometry>
+        <cylinder length="0.09 0 0" radius="0.1 0 0"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="clifford__fro">
+    <inertial>
+      <mass value="0.0117925"/>
+      <origin rpy="0  0  0" xyz="0.115  0     0"/>
+      <inertia ixx="9.65368e-08" ixy="-4.10647e-12" ixz="-5.41898e-20" iyy="5.42742e-05" iyz="-2.03288e-20" izz="5.42722e-05"/>
+    </inertial>
+    <visual name="clifford__fro_visual">
+      <origin rpy="0  0  0" xyz="0  0  0"/>
+      <geometry>
+        <mesh filename="package://PATHTOMESHES/linkageOut.STL" scale="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="clifford__frontAxle">
+    <inertial>
+      <mass value="0.0969889"/>
+      <origin rpy="0  0  0" xyz="0.07074 -0.01986  0.01358"/>
+      <inertia ixx="3.59997e-05" ixy="3.0828e-11" ixz="2.58754e-11" iyy="0.00045052" iyz="-9.38007e-07" izz="0.00042565"/>
+    </inertial>
+    <visual name="clifford__frontAxle_visual">
+      <origin rpy="0  0  0" xyz="0  0  0"/>
+      <geometry>
+        <mesh filename="package://PATHTOMESHES/axleFront.STL" scale="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="clifford__fli">
+    <inertial>
+      <mass value="0.0200332"/>
+      <origin rpy="0  0  0" xyz="0.0975  0      0"/>
+      <inertia ixx="8.24621e-08" ixy="2.3168e-12" ixz="-1.57474e-19" iyy="3.34708e-05" iyz="-1.18585e-20" izz="3.34688e-05"/>
+    </inertial>
+    <visual name="clifford__fli_visual">
+      <origin rpy="0  0  0" xyz="0  0  0"/>
+      <geometry>
+        <mesh filename="package://PATHTOMESHES/linkageIn.STL" scale="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="clifford__flo">
+    <inertial>
+      <mass value="0.0117925"/>
+      <origin rpy="0  0  0" xyz="0.115  0     0"/>
+      <inertia ixx="9.65368e-08" ixy="4.10647e-12" ixz="-1.48398e-19" iyy="5.42742e-05" iyz="5.75982e-20" izz="5.42722e-05"/>
+    </inertial>
+    <visual name="clifford__flo_visual">
+      <origin rpy="0  0  0" xyz="0  0  0"/>
+      <geometry>
+        <mesh filename="package://PATHTOMESHES/linkageOut.STL" scale="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="clifford__flslower">
+    <inertial>
+      <mass value="0.0112311"/>
+      <origin rpy="0  0  0" xyz="0.01658  0       0"/>
+      <inertia ixx="1.19839e-06" ixy="-9.03931e-14" ixz="-8.40562e-15" iyy="9.62721e-07" iyz="1.00979e-15" izz="9.62722e-07"/>
+    </inertial>
+    <visual name="clifford__flslower_visual">
+      <origin rpy="0  0  0" xyz="0  0  0"/>
+      <geometry>
+        <mesh filename="package://PATHTOMESHES/springPart.STL" scale="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="clifford__flsupper">
+    <inertial>
+      <mass value="0.0112311"/>
+      <origin rpy="0  0  0" xyz="0.01658  0       0"/>
+      <inertia ixx="1.19839e-06" ixy="-8.12639e-14" ixz="-1.18884e-14" iyy="9.62721e-07" iyz="1.28395e-15" izz="9.62722e-07"/>
+    </inertial>
+    <visual name="clifford__flsupper_visual">
+      <origin rpy="0  0  0" xyz="0  0  0"/>
+      <geometry>
+        <mesh filename="package://PATHTOMESHES/springPart.STL" scale="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="clifford__flwheel">
+    <inertial>
+      <mass value="0.19539"/>
+      <origin rpy="0  0  0" xyz="0.0075  0      0"/>
+      <inertia ixx="6.03364e-05" ixy="7.91021e-21" ixz="4.51343e-21" iyy="0.000215224" iyz="2.37169e-20" izz="0.000212705"/>
+    </inertial>
+    <visual name="clifford__flwheel_visual">
+      <origin rpy="0  0  0" xyz="0  0  0"/>
+      <geometry>
+        <mesh filename="package://PATHTOMESHES/wheelHub.STL" scale="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="clifford__fri">
+    <inertial>
+      <mass value="0.0200332"/>
+      <origin rpy="0  0  0" xyz="0.0975  0      0"/>
+      <inertia ixx="8.24621e-08" ixy="2.3168e-12" ixz="6.46458e-20" iyy="3.34708e-05" iyz="-2.20229e-20" izz="3.34688e-05"/>
+    </inertial>
+    <visual name="clifford__fri_visual">
+      <origin rpy="0  0  0" xyz="0  0  0"/>
+      <geometry>
+        <mesh filename="package://PATHTOMESHES/linkageIn.STL" scale="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="clifford__frslower">
+    <inertial>
+      <mass value="0.0112311"/>
+      <origin rpy="0  0  0" xyz="0.01658  0       0"/>
+      <inertia ixx="1.19839e-06" ixy="-8.21246e-14" ixz="-1.16186e-14" iyy="9.62721e-07" iyz="1.2681e-15" izz="9.62722e-07"/>
+    </inertial>
+    <visual name="clifford__frslower_visual">
+      <origin rpy="0  0  0" xyz="0  0  0"/>
+      <geometry>
+        <mesh filename="package://PATHTOMESHES/springPart.STL" scale="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="clifford__frsupper">
+    <inertial>
+      <mass value="0.0112311"/>
+      <origin rpy="0  0  0" xyz="0.01658  0       0"/>
+      <inertia ixx="1.19839e-06" ixy="-8.97667e-14" ixz="-8.70313e-15" iyy="9.62721e-07" iyz="1.03829e-15" izz="9.62722e-07"/>
+    </inertial>
+    <visual name="clifford__frsupper_visual">
+      <origin rpy="0  0  0" xyz="0  0  0"/>
+      <geometry>
+        <mesh filename="package://PATHTOMESHES/springPart.STL" scale="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="clifford__frwheel">
+    <inertial>
+      <mass value="0.19539"/>
+      <origin rpy="0  0  0" xyz="0.0075  0      0"/>
+      <inertia ixx="6.03364e-05" ixy="-7.33769e-21" ixz="2.87017e-21" iyy="0.000215224" iyz="-3.38813e-21" izz="0.000212705"/>
+    </inertial>
+    <visual name="clifford__frwheel_visual">
+      <origin rpy="0  0  0" xyz="0  0  0"/>
+      <geometry>
+        <mesh filename="package://PATHTOMESHES/wheelHub.STL" scale="1 1 1"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="clifford__fltire">
+    <inertial>
+      <mass value="2.65072"/>
+      <origin rpy="0  0  0" xyz="0.045  0     0"/>
+      <inertia ixx="0.0140819" ixy="-1.63996e-19" ixz="-5.51633e-19" iyy="0.00883021" iyz="-1.0842e-19" izz="0.00883021"/>
+    </inertial>
+    <collision name="clifford__fltire_collision">
+      <origin rpy="0       1.57079  0" xyz="0.045  0     0"/>
+      <geometry>
+        <cylinder length="0.09 0 0" radius="0.1 0 0"/>
+      </geometry>
+    </collision>
+    <visual name="clifford__fltire_visual">
+      <origin rpy="0       1.57079  0" xyz="0.045  0     0"/>
+      <geometry>
+        <cylinder length="0.09 0 0" radius="0.1 0 0"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="clifford__frtire">
+    <inertial>
+      <mass value="2.65072"/>
+      <origin rpy="0  0  0" xyz="0.045  0     0"/>
+      <inertia ixx="0.0140819" ixy="6.05221e-19" ixz="2.56811e-19" iyy="0.00883021" iyz="-8.67362e-19" izz="0.00883021"/>
+    </inertial>
+    <collision name="clifford__frtire_collision">
+      <origin rpy="-1.00000000e-05   1.57079000e+00   1.00000000e-05" xyz="0.045  0     0"/>
+      <geometry>
+        <cylinder length="0.09 0 0" radius="0.1 0 0"/>
+      </geometry>
+    </collision>
+    <visual name="clifford__frtire_visual">
+      <origin rpy="-1.00000000e-05   1.57079000e+00   1.00000000e-05" xyz="0.045  0     0"/>
+      <geometry>
+        <cylinder length="0.09 0 0" radius="0.1 0 0"/>
+      </geometry>
+    </visual>
+  </link>
+</robot>

@@ -6,7 +6,6 @@ import pybullet
 import time
 
 from ackermann_msgs.msg import AckermannDriveStamped, AckermannDrive
-from common_msgs.msg import AckermannDriveArray
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import PoseStamped

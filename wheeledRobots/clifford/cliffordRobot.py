@@ -15,6 +15,7 @@ class Clifford:
         # self.traction = 0
         self.params = {"maxThrottle":50,
                         "maxSteerAngle":0.5,
+                        "maxSteerRate":0.2,
                         "susOffset":-0.01,
                         "susLowerLimit":-0.005,
                         "susUpperLimit":0.008,
@@ -209,14 +210,14 @@ class Clifford:
         p.setJointMotorControl2(bodyUniqueId=self.cliffordID,
         jointIndex=self.jointNameToID['axle2frwheel'],
         controlMode=p.POSITION_CONTROL,
-        maxVelocity = 10,
+        maxVelocity = self.params['maxSteerRate'],
         targetPosition = angle*self.params["maxSteerAngle"],
         force = maxForce,physicsClientId=self.physicsClientId)
 
         p.setJointMotorControl2(bodyUniqueId=self.cliffordID,
         jointIndex=self.jointNameToID['axle2flwheel'],
         controlMode=p.POSITION_CONTROL,
-        maxVelocity = 10,
+        maxVelocity = self.params['maxSteerRate'],
         targetPosition = angle*self.params["maxSteerAngle"],
         force = maxForce,physicsClientId=self.physicsClientId)
 

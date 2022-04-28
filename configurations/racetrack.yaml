@@ -1,0 +1,47 @@
+---
+  cliffordParams:
+    maxThrottle: 20 # dynamical parameters of clifford robot
+    maxSteerAngle: 0.5
+    susOffset: -0.00
+    susLowerLimit: -0.01
+    susUpperLimit: 0.00
+    susDamping: 10
+    susSpring: 500
+    traction: 1.25
+    massScale: 1.0
+
+  simulationParams:
+    timeStep: 0.002
+    stepsPerControlLoop: 50
+    numSolverIterations: 50
+    gravity: -10
+    contactBreakingThreshold: 0.0001
+    contactSlop: 0.0001
+    moveThreshold: 0.1
+    maxStopMoveLength: 250
+  terrainMapParams:
+    mapWidth: 300  # width of matrix
+    mapHeight: 300  # height of matrix
+    widthScale: 0.1  # each pixel corresponds to this distance
+    heightScale: 0.1
+    depthScale: 1
+
+  terrainParams:
+    terrainType: "racetrack"
+
+  senseParams:
+      senseType: -1
+
+  explorationParams:
+      explorationType: "boundedExplorationNoise"
+
+  sensors:
+      FrontCamera:
+          type: FrontCameraSensor
+          topic: front_camera
+          params:
+              FOV: 45.0
+              aspect: 1.0
+              senseResolution: [128, 128]
+              senseDepth: [0.1, 100.0]
+              sensorPose: [[-0.5, 0.0, 2.0], [0., 0.2588, 0., 0.9659]]

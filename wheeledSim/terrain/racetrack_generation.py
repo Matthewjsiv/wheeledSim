@@ -133,7 +133,18 @@ def densify_racetrack(track_pts, ds=0.01):
         pts = np.expand_dims(p0, axis=0) + np.expand_dims(alpha, axis=1) * disp
         upsample_pts.append(pts)
 
+    #Always start on straight part
+    roll_k = int(np.linalg.norm(track_pts[0]-track_pts[1]) / (2 * ds))
     upsample_pts = np.concatenate(upsample_pts, axis=0)
+    upsample_pts = np.roll(upsample_pts, roll_k, axis=0)
+
+#    import pdb;pdb.set_trace()
+    #Re-center and rotate
+    upsample_pts = upsample_pts - upsample_pts[[0]]
+    ang = -np.arctan2(upsample_pts[1, 1] - upsample_pts[0, 1], upsample_pts[1, 0] - upsample_pts[0, 0])
+    R = np.array([[[np.cos(ang), -np.sin(ang)],[np.sin(ang), np.cos(ang)]]])
+    upsample_pts = np.matmul(R, np.expand_dims(upsample_pts, axis=-1))[:, :, 0]
+        
     return upsample_pts
 
 if __name__ == '__main__':

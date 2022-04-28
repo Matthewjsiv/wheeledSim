@@ -41,6 +41,8 @@ class terrain(object):
         self.terrainShape = [] # used to replace terrain shape if it already exists
         self.terrainBody = []
         self.color = [0.82,0.71,0.55,1]
+
+        self.colormap = np.tile(np.array(self.color[:2]), (self.terrainMapParams['mapWidth'], self.terrainMapParams['mapHeight'], 1))
     def copyGridZ(self,gridZIn):
         self.gridZ=np.copy(gridZIn)
         self.updateTerrain()
@@ -56,6 +58,8 @@ class terrain(object):
                                                         numHeightfieldRows=self.mapWidth, numHeightfieldColumns=self.mapHeight,
                                                         physicsClientId=self.physicsClientId)
             self.terrainOffset = (np.max(self.gridZ)+np.min(self.gridZ))/2.
+
+        
         self.terrainBody  = p.createMultiBody(0, self.terrainShape,physicsClientId=self.physicsClientId)
         # position terrain correctly
         p.resetBasePositionAndOrientation(self.terrainBody,[-self.meshScale[0]/2.,-self.meshScale[1]/2.,self.terrainOffset], [0,0,0,1],physicsClientId=self.physicsClientId)
@@ -63,7 +67,11 @@ class terrain(object):
 
         if texture_fp:
             textureId = p.loadTexture(texture_fp)
-            p.changeVisualShape(self.terrainBody, -1, textureUniqueId = textureId, rgbaColor=[1, 1, 1, 1])
+#            p.changeVisualShape(self.terrainBody, -1, textureUniqueId = textureId, rgbaColor=[1, 1, 1, 1])
+            p.changeVisualShape(self.terrainBody, -1, textureUniqueId = textureId)
+            self.colormap = np.asarray(Image.open(texture_fp))[:, ::-1]
+            if self.colormap.dtype == np.uint8:
+                self.colormap = self.colormap.astype(np.float32) / 255.
         else:
             p.changeVisualShape(self.terrainBody, -1, textureUniqueId=-1,rgbaColor=self.color,physicsClientId=self.physicsClientId)
 
@@ -402,7 +410,9 @@ class randomRockyTerrain(terrain):
                             "frictionScale":2.0,
                             "frictionOffset":0.2,
                             "flatRadius":1,
-                            "blendRadius":0.5}
+                            "blendRadius":0.5,
+                            "agentOrigin": [0.0, 0.0],
+                            "planeOffsetRadius":0.2}
         self.n_terrains = 0
     # generate new terrain. (Delete old terrain if exists)
     def generate(self,terrainParamsIn={},copyBlockHeight=None,goal=None):
@@ -417,10 +427,19 @@ class randomRockyTerrain(terrain):
                 blockHeights = gaussian_filter(blockHeights.reshape(self.gridX.shape), sigma=self.terrainParams["smoothing"])
         else:
             blockHeights=copyBlockHeight
+
         # add more small noise
-        smallNoise = self.perlinNoise(self.gridX.reshape(-1),self.gridY.reshape(-1),self.terrainParams["perlinScale"],self.terrainParams["perlinHeightScale"])
-        smallNoise = smallNoise.reshape(self.gridX.shape)
-        self.gridZ = (blockHeights+smallNoise)
+#        smallNoise = self.perlinNoise(self.gridX.reshape(-1),self.gridY.reshape(-1),self.terrainParams["perlinScale"],self.terrainParams["perlinHeightScale"])
+#        smallNoise = smallNoise.reshape(self.gridX.shape)
+#        self.gridZ = (blockHeights+smallNoise)
+    
+        #SAM CHANGES: allow for multiple perlin noises for better terrain
+        self.gridZ = blockHeights
+        for perlin_dist in self.terrainParams['perlinNoises']:
+            smallNoise = self.perlinNoise(self.gridX.reshape(-1),self.gridY.reshape(-1),perlin_dist["perlinScale"],perlin_dist["perlinHeightScale"])
+            smallNoise = smallNoise.reshape(self.gridX.shape)
+            self.gridZ += smallNoise
+
         # params for flat areas (start and goal)
         if hasattr(self.terrainParams['flatRadius'],'__len__'):
             startFlatRadius = self.terrainParams['flatRadius'][0]
@@ -439,7 +458,7 @@ class randomRockyTerrain(terrain):
             startBlendRadius = self.terrainParams['blendRadius']
             goalBlendRadius = startBlendRadius
         # make center flat for initial robot start position
-        distFromOrigin = np.sqrt(self.gridX*self.gridX + self.gridY*self.gridY)
+        distFromOrigin = np.sqrt((self.gridX-self.terrainParams['agentOrigin'][0])**2 + (self.gridY-self.terrainParams['agentOrigin'][1])**2)
         flatIndices = distFromOrigin<startFlatRadius
         if flatIndices.any():
             flatHeight = np.mean(self.gridZ[flatIndices])
@@ -447,6 +466,25 @@ class randomRockyTerrain(terrain):
             distFromFlat = distFromOrigin - startFlatRadius
             blendIndices = distFromFlat < startBlendRadius
             self.gridZ[blendIndices] = flatHeight + (self.gridZ[blendIndices]-flatHeight)*distFromFlat[blendIndices]/startBlendRadius
+
+        # add planar "bias" to the maps
+        direction = np.random.uniform(0., 2*np.pi)
+        r = self.terrainParams['planeOffsetRadius']
+        plane_normal = np.array([
+            r * np.cos(direction),
+            r * np.sin(direction),
+            np.sqrt(1. - r**2)
+        ])
+
+        gridZ_disp = (1/plane_normal[2]) * (-(plane_normal[0] * self.gridX + plane_normal[1] * self.gridY))
+        self.gridZ += gridZ_disp
+
+        # set height at agent position to be 0 
+        if self.terrainParams['agentOrigin']:
+            xg = int(self.gridZ.shape[0]/2) + int(self.terrainParams['agentOrigin'][0] / self.terrainMapParams['widthScale'])
+            yg = int(self.gridZ.shape[1]/2) + int(self.terrainParams['agentOrigin'][1] / self.terrainMapParams['heightScale'])
+            self.gridZ -= self.gridZ[xg, yg]
+
         # make goal flat
         if not goal is None:
             distFromGoal = np.sqrt((self.gridX-goal[0])**2+(self.gridY-goal[1])**2)
@@ -457,7 +495,7 @@ class randomRockyTerrain(terrain):
                 distFromFlat = distFromGoal - goalFlatRadius
                 blendIndices = distFromFlat < goalBlendRadius
                 self.gridZ[blendIndices] = flatHeight + (self.gridZ[blendIndices]-flatHeight)*distFromFlat[blendIndices]/goalBlendRadius
-        self.gridZ = self.gridZ-np.min(self.gridZ)
+#        self.gridZ = self.gridZ-np.min(self.gridZ)
 
         #Add a friction map.
         self.frictionMap = self.perlinNoise(self.gridX.reshape(-1),self.gridY.reshape(-1), 0.5*self.terrainParams["frictionPerlinScale"], self.terrainParams['frictionScale']/2.0).reshape(self.gridX.shape)
@@ -468,7 +506,7 @@ class randomRockyTerrain(terrain):
         maybe_mkdir("friction_maps", force=True)
         im.save("friction_maps/friction_map_{}.png".format(self.n_terrains))
 
-        self.updateTerrain(texture_fp="friction_maps/friction_map_{}.png".format(self.n_terrains))
+        self.updateTerrain()
         self.n_terrains += 1
 
     def get_friction_map(self):
@@ -563,6 +601,7 @@ class RacetrackTerrain(terrain):
         self.gridY = np.linspace(-self.mapSize[1]/2.0,self.mapSize[1]/2.0,self.mapHeight)
         self.gridX,self.gridY = np.meshgrid(self.gridX,self.gridY)
         self.gridZ = np.zeros_like(self.gridX)
+
         self.terrainShape = [] # used to replace terrain shape if it already exists
         self.terrainBody = []
         self.road_color = [0., 0., 0., 1.]
@@ -662,19 +701,19 @@ class PregenerateRacetrackTerrain(RacetrackTerrain):
         pts *= scale
 
         #Draw the racetrack image
-        iw=300
-        ih=300
+        iw=self.terrainMapParams['mapWidth']
+        ih=self.terrainMapParams['mapHeight']
         _img = np.zeros([iw,ih,4])
-        for i,x in enumerate(np.linspace(xmin,xmax,iw)):
-            for j,y in enumerate(np.linspace(ymin,ymax,ih)):
-                dists = np.linalg.norm(np.array([x,y]) - pts, axis=1)
+        for i in range(self.gridX.shape[0]):
+            for j in range(self.gridX.shape[1]):
+                x = self.gridX[i,j]
+                y = self.gridY[i,j]
+                dists = np.linalg.norm(np.array([x, y]) - pts, axis=1)
+                #DEBUG
+                self.gridZ[i,j] = 0. if dists.min() < self.terrainMapParams['trackWidth'] else 1.0
                 _img[i,j] = np.array(self.road_color if dists.min() < self.terrainMapParams['trackWidth'] else self.ob_color)
 
-        plt.imshow(_img);plt.show()
-
-        im = Image.fromarray(np.swapaxes(_img[:, :, :3]*255, 0, 1).astype(np.uint8))
-
-        plt.imshow(im);plt.show()
+        im = Image.fromarray((_img[:, ::-1, :3]*255).astype(np.uint8))
 
         im.save("friction_map.png")
 

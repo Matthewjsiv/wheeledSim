@@ -7,22 +7,33 @@ import os
 import yaml
 from wheeledSim.terrain.randomTerrain import randomRockyTerrain
 
+def sample_parameters(param_dict):
+    if isinstance(param_dict, dict):
+        out = {}
+        if 'distribution' in param_dict.keys():
+            #Sample
+            if param_dict['distribution'] == 'exponential':
+                return param_dict['offset'] + np.random.exponential(param_dict['scale'])
+            elif param_dict['distribution'] == 'uniform':
+                return np.random.uniform(param_dict['min'], param_dict['max'])
+            return "BAD"
+
+        else:
+            return {k:sample_parameters(v) for k,v in param_dict.items()}
+
+    elif isinstance(param_dict, list):
+        return [sample_parameters(x) for x in param_dict]
+
+    else:
+        return param_dict
+
 def generate_terrain(config, physicsClientId, viz):
     """
     Key difference from regular config files is that we need to sample from an exponential distribution
     """
     terrain = randomRockyTerrain(config['terrainMapParams'])
 
-    param_distribution = {}
-    for k, v in config['terrainParams'].items():
-        if isinstance(v, float):
-            param_distribution[k] = v
-        else:
-            if v['distribution'] == 'exponential':
-                param_distribution[k] = v['offset'] + np.random.exponential(v['scale'])
-            elif v['distribution'] == 'uniform':
-                param_distribution[k] = np.random.uniform(v['min'], v['max'])
-
+    param_distribution = sample_parameters(config['terrainParams'])
     print(param_distribution)
     terrain.generate(param_distribution)
 
@@ -72,7 +83,7 @@ if __name__ == '__main__':
     else:
         os.mkdir(args.save_to)
 
-    config_basenames = os.listdir(args.config_dir)
+    config_basenames = [x for x in os.listdir(args.config_dir) if x[-5:] == '.yaml']
 
     physicsClientId = p.connect(p.GUI if args.viz else p.DIRECT)
     p.setGravity(0,0,-10)
